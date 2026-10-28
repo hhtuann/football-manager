@@ -87,6 +87,18 @@ body {
     color: #e0f0e7;
 }
 
+/* Thông báo lỗi */
+.error-box {
+    margin: 16px 0;
+    padding: 12px;
+    border: 1px solid #df4545;
+    border-radius: 8px;
+    background: #fff0f0;
+    color: #c62828;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
     .topbar-inner {

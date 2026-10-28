@@ -1,15 +1,7 @@
-
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
 <%@ page import="com.footballmanager.model.*" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
-
-<%!
-    private String escapeHomeHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;")
-                .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
-    }
-%>
+<%@ page import="com.footballmanager.util.HTMLUtil" %>
 
 <%
     response.setHeader("Cache-Control", "no-store");
@@ -35,11 +27,12 @@
 </head>
 
 <body>
+
 <%@ include file="fragments/topbar.jspf" %>
 
 <main class="home-content">
     <section class="welcome">
-        <h2>Xin chào, <%= escapeHomeHtml(user.getFullName()) %>!</h2>
+        <h2>Xin chào, <%= HTMLUtil.escape(user.getFullName()) %>!</h2>
         <p>Chào mừng bạn đến với hệ thống quản lý giải bóng đá vô địch quốc gia.</p>
     </section>
 
@@ -48,7 +41,9 @@
 
         <div class="function-grid">
             <% if (user instanceof Staff) { %>
-            <button class="function-btn" disabled>Quản lý thông tin cầu thủ</button>
+            <a class="function-btn" href="${pageContext.request.contextPath}/index.jsp?page=player-search">
+                Quản lý thông tin cầu thủ
+            </a>
             <button class="function-btn" disabled>Đăng ký cầu thủ thi đấu cho trận đấu</button>
             <button class="function-btn" disabled>Cập nhật kết quả thi đấu</button>
             <% } else if (user instanceof Player) { %>

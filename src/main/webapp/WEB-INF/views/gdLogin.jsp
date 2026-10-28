@@ -1,4 +1,4 @@
-
+<%@ page import="com.footballmanager.util.HTMLUtil" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
 
 <%
@@ -23,7 +23,8 @@
     <p class="subtitle">Vui lòng đăng nhập để sử dụng hệ thống.</p>
 
     <% if (error != null && !error.isBlank()) { %>
-    <div class="error-box" role="alert"><%= error %></div>
+    <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
+    </div>
     <% } %>
 
     <form action="${pageContext.request.contextPath}/doLogin.jsp" method="post">

@@ -5,11 +5,12 @@
     if (!"POST".equalsIgnoreCase(request.getMethod())) {
         response.setHeader("Allow", "POST");
         response.sendError(405);
-    } else {
-        HttpSession currentSession = request.getSession(false);
-        if (currentSession != null) currentSession.invalidate();
-
-        response.setHeader("Cache-Control", "no-store");
-        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return;
     }
+
+    HttpSession currentSession = request.getSession(false);
+    if (currentSession != null) currentSession.invalidate();
+
+    response.setHeader("Cache-Control", "no-store");
+    response.sendRedirect(request.getContextPath() + "/index.jsp");
 %>

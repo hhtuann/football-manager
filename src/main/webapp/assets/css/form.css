@@ -1,0 +1,167 @@
+
+.form-content {
+    width: 100%;
+    max-width: 1040px;
+    min-height: calc(100vh - 110px);
+    margin: 0 auto;
+    padding: 36px 24px;
+}
+
+.form-content .back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: #0e5a3c;
+    font-size: 14px;
+    text-decoration: underline;
+}
+
+.form-content h2 {
+    margin: 0 0 24px;
+    color: #0a3f2c;
+    font-size: 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-field label {
+    font-weight: bold;
+}
+
+.form-field label span {
+    color: #c73535;
+}
+
+.form-field input,
+.form-field select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #bdcfc1;
+    border-radius: 8px;
+    background: white;
+    color: #1c2b23;
+    font: inherit;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+    outline: 2px solid #43866a;
+    outline-offset: 1px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.form-actions button,
+.form-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.cancel-btn {
+    border: 1px solid #bdcfc1;
+    background: transparent;
+    color: #1c2b23;
+}
+
+.save-btn {
+    border: none;
+    background: #0e5a3c;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #dce9df;
+}
+
+.save-btn:hover {
+    background: #0a3f2c;
+}
+
+@media (max-width: 700px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-content {
+        padding: 24px 16px;
+    }
+
+    .form-content h2 {
+        font-size: 21px;
+    }
+}
+
+.form-field select {
+    appearance: none;
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231c2b23' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+}
+
+.result-dialog {
+    width: min(440px, calc(100% - 32px));
+    padding: 24px;
+    border: 1px solid #bdcfc1;
+    border-radius: 10px;
+    color: #1c2b23;
+    box-shadow: 0 12px 36px #0002;
+}
+
+.result-dialog::backdrop {
+    background: #0008;
+}
+
+.result-dialog h3 {
+    margin: 0 0 20px;
+    color: #0e5a3c;
+}
+
+.result-dialog p {
+    margin: 10px 0;
+}
+
+.result-dialog-note {
+    margin-top: 20px !important;
+    color: #486656;
+    font-size: 13px;
+}
+
+.result-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.result-dialog-actions button {
+    padding: 10px 28px;
+    border-radius: 8px;
+    font: inherit;
+    cursor: pointer;
+}
+
