@@ -1,0 +1,72 @@
+
+.home-content {
+    width: 100%;
+    max-width: 1040px;
+    min-height: calc(100vh - 110px);
+    margin: 0 auto;
+    padding: 36px 24px;
+}
+
+/* Lời chào */
+.welcome h2 {
+    margin: 0 0 12px;
+    font-size: 24px;
+    color: #0a3f2c;
+}
+
+.welcome p {
+    margin: 0;
+    color: #5c6f66;
+    line-height: 1.6;
+}
+
+/* Danh sách chức năng */
+.functions {
+    margin-top: 36px;
+}
+
+.functions h3 {
+    margin: 0 0 16px;
+    font-size: 17px;
+    color: #0a3f2c;
+}
+
+.function-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.function-btn {
+    min-height: 60px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #0e5a3c;
+    color: white;
+    font: inherit;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.function-btn:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+    .function-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-content {
+        padding: 24px 16px;
+    }
+
+    .welcome h2 {
+        font-size: 21px;
+    }
+}

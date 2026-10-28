@@ -1,0 +1,55 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ page import="com.footballmanager.model.*" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+
+<%!
+    private String escapeTopbarHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;")
+                .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+    }
+%>
+
+<%
+    HttpSession topbarSession = request.getSession(false);
+    Object topbarAccount = topbarSession == null ? null : topbarSession.getAttribute("currentUser");
+    User topbarUser = topbarAccount instanceof User ? (User) topbarAccount : null;
+
+    String topbarRole = topbarUser instanceof Staff ? "Nhân viên Ban tổ chức"
+            : topbarUser instanceof Player ? "Cầu thủ"
+            : topbarUser instanceof Manager ? "Quản lý CLB" : "Khán giả";
+
+    String currentBreadcrumb = (String) request.getAttribute("breadcrumb");
+%>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-main">
+            <div class="topbar-info">
+                <h1>Hệ thống quản lý giải bóng đá vô địch quốc gia</h1>
+
+                <% if (topbarUser != null) { %>
+                <p><%= escapeTopbarHtml(topbarUser.getFullName()) %> — <%= topbarRole %></p>
+                <% } %>
+            </div>
+
+            <% if (topbarUser != null) { %>
+            <form action="${pageContext.request.contextPath}/doLogout.jsp" method="post">
+                <button class="logout-link" type="submit">Đăng xuất</button>
+            </form>
+            <% } %>
+        </div>
+
+        <nav class="breadcrumb" aria-label="Điều hướng">
+            <% if (topbarUser != null) { %>
+            <a href="${pageContext.request.contextPath}/index.jsp">Trang chủ</a>
+
+            <% if (currentBreadcrumb != null && !currentBreadcrumb.isBlank()) { %>
+            <span> › <%= escapeTopbarHtml(currentBreadcrumb) %></span>
+            <% } %>
+            <% } else { %>
+            <span>Đăng nhập</span>
+            <% } %>
+        </nav>
+    </div>
+</header>

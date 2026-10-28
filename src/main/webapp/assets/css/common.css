@@ -1,0 +1,103 @@
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #1c2b23;
+    background: #edf2ee;
+}
+
+/* Topbar dùng chung */
+.topbar {
+    width: 100%;
+    background: #0e5a3c;
+    color: white;
+}
+
+.topbar-inner {
+    width: 100%;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 16px 24px 12px;
+}
+
+.topbar-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.topbar-info h1 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.topbar-info p {
+    margin: 0;
+    font-size: 13px;
+    color: #e0f0e7;
+}
+
+/* Nút đăng xuất dạng liên kết */
+.topbar form {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.logout-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: white;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.logout-link:hover {
+    color: #d5eadd;
+}
+
+/* Thanh điều hướng */
+.breadcrumb {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #43866a;
+    font-size: 13px;
+}
+
+.breadcrumb a {
+    color: white;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.breadcrumb span {
+    color: #e0f0e7;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .topbar-inner {
+        padding: 16px;
+    }
+
+    .topbar-main {
+        align-items: flex-start;
+    }
+
+    .topbar-info h1 {
+        font-size: 15px;
+    }
+}

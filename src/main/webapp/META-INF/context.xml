@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Context>
+    <Resources>
+        <PreResources
+                className="org.apache.catalina.webresources.DirResourceSet"
+                base="/opt/dev/webapp"
+                webAppMount="/"
+                internalPath="/"
+                readOnly="true"
+        />
+    </Resources>
+</Context>

@@ -1,0 +1,69 @@
+
+.login-content {
+    width: 100%;
+    max-width: 430px;
+    margin: 48px auto;
+    padding: 0 16px;
+}
+
+.login-content h2 {
+    margin: 0 0 10px;
+    color: #0a3f2c;
+    text-align: center;
+}
+
+.subtitle {
+    margin: 0 0 26px;
+    color: #5c6f66;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.login-content label {
+    display: block;
+    margin: 15px 0 6px;
+    font-weight: bold;
+}
+
+.login-content input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #a9c0b3;
+    border-radius: 8px;
+    background: white;
+    font: inherit;
+}
+
+.login-content input:focus {
+    border-color: #0e5a3c;
+    outline: 2px solid #c7e6d5;
+}
+
+.login-button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 11px;
+    border: none;
+    border-radius: 8px;
+    background: #0e5a3c;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background: #0c4c33;
+}
+
+/* Thông báo lỗi */
+.error-box {
+    margin: 16px 0;
+    padding: 12px;
+    border: 1px solid #df4545;
+    border-radius: 8px;
+    background: #fff0f0;
+    color: #c62828;
+    font-size: 13px;
+    line-height: 1.5;
+}
