@@ -117,8 +117,7 @@
 }
 
 .search-results td button,
-.search-results td a.edit-btn,
-.search-results td a.delete-btn{
+.search-results td a.edit-btn {
     display: inline-block;
     padding: 7px 12px;
     border-radius: 10px;
@@ -176,4 +175,29 @@
     .search-content h2 {
         font-size: 21px;
     }
+}
+
+.dialog-cancel-btn {
+    background: #edf6f0;
+    border: 1px solid #0e5a3c;
+    color: #0e5a3c;
+}
+
+.dialog-cancel-btn:hover {
+    background: #dce9df;
+}
+
+.dialog-delete-btn {
+    border: 1px solid #c73535;
+    background: #c73535;
+    color: white;
+}
+
+.dialog-delete-btn:not(:disabled):hover {
+    background: #a72828;
+}
+
+.dialog-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

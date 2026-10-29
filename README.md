@@ -13,7 +13,7 @@ Hệ thống hỗ trợ Ban tổ chức giải quản lý toàn bộ dữ liệu
 
 | # | Chức năng | Mô tả | Trạng thái |
 |---|-----------|-------|------------|
-| 1 | **Quản lý thông tin cầu thủ** | Tìm kiếm, thêm mới, sửa thông tin cầu thủ (xoá đang phát triển) | 🟡 Hoàn thành luồng *thêm cầu thủ*, *sửa cầu thủ*, *tìm kiếm* + đăng nhập/đăng xuất |
+| 1 | **Quản lý thông tin cầu thủ** | Tìm kiếm, thêm mới, sửa thông tin, xoá cầu thủ | ✅ Hoàn thành (kèm đăng nhập/đăng xuất) |
 | 2 | **Đăng ký cầu thủ thi đấu cho trận đấu** | Đội bóng đăng ký danh sách cầu thủ tham dự mỗi trận | ⚪ Đang phát triển |
 | 3 | **Cập nhật kết quả thi đấu** | Nhập tỷ số, cập nhật kết quả các trận đấu | ⚪ Đang phát triển |
 
@@ -211,6 +211,39 @@ Nhân viên tìm cầu thủ cần sửa trong danh sách, bấm **Sửa**, hệ
 3. `doEditPlayer.jsp` kiểm tra phiên đăng nhập (phải là `Staff`), kiểm tra dữ liệu, gọi `PlayerDAO.updatePlayer()`.
 4. `updatePlayer()` mở transaction cập nhật bảng `users` (họ tên, ngày sinh, email, SĐT) và bảng `players` (quốc tịch, vị trí, chiều cao, cân nặng); chỉ commit khi cả hai bản ghi đều cập nhật thành công, ngược lại rollback.
 5. Thành công: redirect về form, hiển thị hộp thoại xác nhận.
+
+## Luồng demo: Xoá cầu thủ (Chức năng 1)
+
+Nhân viên bấm **Xóa** trên hàng của cầu thủ trong danh sách, xác nhận trong hộp thoại; hệ thống xoá hồ sơ và tài khoản của cầu thủ khỏi CSDL.
+
+### Các bước thực hiện
+
+| # | Màn hình | Mô tả |
+|---|----------|-------|
+| 1 | Xác nhận xóa | Hộp thoại hiện tên cầu thủ, cảnh báo không thể hoàn tác; bấm **Xác nhận xóa** |
+| 2 | Kết quả | Hộp thoại thông báo xóa thành công |
+| 3 | Tìm kiếm lại | Cầu thủ đã biến mất khỏi hệ thống |
+
+### Màn hình
+
+**1. Hộp thoại xác nhận xóa**:
+
+![Xác nhận xóa](docs/screenshots/12-delete-player-confirm.png)
+
+**2. Xóa thành công**:
+
+![Xóa thành công](docs/screenshots/13-delete-player-success.png)
+
+**3. Cầu thủ đã bị xóa** — tìm không còn thấy:
+
+![Kết quả xóa](docs/screenshots/14-delete-player-result.png)
+
+### Diễn giải luồng (kỹ thuật)
+
+1. `search.js` bắt sự kiện nút **Xóa**, điền id cầu thủ vào form và mở hộp thoại xác nhận.
+2. Xác nhận → POST `player-id` tới `doDeletePlayer.jsp` (yêu cầu phiên `Staff`).
+3. `PlayerDAO.deletePlayer()` xoá bản ghi `users` (cascade xoá `players`) — chỉ xoá khi id đó thực sự là cầu thủ.
+4. Kết quả lưu vào session, redirect về trang tìm kiếm; hộp thoại kết quả tự mở qua `search.js`.
 
 ## Giấy phép
 

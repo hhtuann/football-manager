@@ -36,6 +36,7 @@
             newSession.setMaxInactiveInterval(30 * 60);
             response.sendRedirect(response.encodeRedirectURL(request.getContextPath() + "/index.jsp"));
         }
+
     } catch (SQLException e) {
         application.log("Lỗi database khi đăng nhập", e);
         request.setAttribute("error", "Hệ thống đang gặp lỗi, vui lòng thử lại!");

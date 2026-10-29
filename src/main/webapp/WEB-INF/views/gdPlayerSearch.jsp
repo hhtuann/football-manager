@@ -17,6 +17,9 @@
         return;
     }
 
+    String deleteResult = (String) currentSession.getAttribute("deleteResult");
+    currentSession.removeAttribute("deleteResult");
+
     String key = request.getParameter("key");
     if (key == null) key = "";
 
@@ -47,6 +50,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/common.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/search.css">
+    <script src="${pageContext.request.contextPath}/assets/js/search.js" defer></script>
 </head>
 
 <body class="search-page">
@@ -74,7 +78,8 @@
         <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
         </div>
         <% } else if (listPlayer.isEmpty()) { %>
-        <div class="error-box" role="alert">HTMLUtil.escape(Không tìm thấy cầu thủ phù hợp.)</div>
+        <div class="error-box" role="alert"><%= HTMLUtil.escape("Không tìm thấy cầu thủ phù hợp.") %>
+        </div>
         <% } else { %>
         <div class="table-scroll">
             <table>
@@ -104,7 +109,12 @@
                     <td>
                         <a class="edit-btn"
                            href="${pageContext.request.contextPath}/index.jsp?page=player-edit&amp;id=<%= player.getId() %>">Sửa</a>
-                        <button class="delete-btn" type="button" disabled>Xoá</button>
+                        <button class="delete-btn" type="button"
+                                data-player-id="<%= player.getId() %>"
+                                data-player-name="<%= HTMLUtil.escape(player.getFullName()) %>">
+                            Xóa
+                        </button>
+
                     </td>
                 </tr>
                 <% } %>
@@ -114,6 +124,46 @@
         <% } %>
     </section>
 </main>
+
+<dialog id="delete-player-dialog" class="app-dialog">
+    <h3>Xác nhận xóa cầu thủ</h3>
+
+    <p>Bạn có chắc chắn muốn xóa cầu thủ <strong id="delete-player-name"></strong>?</p>
+
+    <p class="dialog-note">Thao tác này sẽ xóa thông tin cầu thủ và tài khoản đăng nhập tương ứng. Không thể hoàn
+        tác.</p>
+
+    <div class="dialog-actions">
+        <form method="dialog">
+            <button type="submit" class="dialog-cancel-btn">Hủy</button>
+        </form>
+
+        <form action="${pageContext.request.contextPath}/doDeletePlayer.jsp" method="post">
+            <button id="confirm-delete-btn" class="dialog-delete-btn"
+                    type="submit" name="player-id">
+                Xác nhận xóa
+            </button>
+        </form>
+    </div>
+</dialog>
+
+<% if (deleteResult != null) { %>
+<dialog id="delete-result-dialog" class="app-dialog">
+    <h3><%= "success".equals(deleteResult) ? "Xóa cầu thủ thành công!" : "Xóa cầu thủ thất bại!" %>
+    </h3>
+
+    <p><%= switch (deleteResult) {
+        case "success" -> "Thông tin cầu thủ và tài khoản đăng nhập đã được xóa.";
+        case "not-found" -> "Không tìm thấy cầu thủ cần xóa!";
+        default -> "Không thể xóa cầu thủ. Vui lòng thử lại!";
+    } %>
+    </p>
+
+    <form method="dialog" class="dialog-actions">
+        <button type="submit" class="dialog-ok-btn">OK</button>
+    </form>
+</dialog>
+<% } %>
 
 </body>
 </html>

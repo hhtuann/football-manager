@@ -175,4 +175,21 @@ public class PlayerDAO extends UserDAO {
             }
         }
     }
+
+    public boolean deletePlayer(int playerId) throws SQLException {
+        String sql = """
+                DELETE FROM users u
+                WHERE u.id = ?
+                AND EXISTS (
+                    SELECT 1 FROM players p WHERE p.user_id = u.id
+                )
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, playerId);
+            return ps.executeUpdate() == 1;
+        }
+    }
 }

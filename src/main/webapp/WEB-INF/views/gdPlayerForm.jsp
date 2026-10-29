@@ -174,7 +174,7 @@
 </main>
 
 <% if (createdPlayer != null) { %>
-<dialog id="result-dialog" class="result-dialog" data-clear-on-close="true">
+<dialog id="result-dialog" class="app-dialog" data-clear-on-close="true">
     <h3>Thêm cầu thủ thành công!</h3>
 
     <p>Họ và tên: <strong><%= HTMLUtil.escape(createdPlayer.getFullName()) %>
@@ -183,9 +183,9 @@
     </strong></p>
     <p>Mật khẩu mặc định: <strong>player@123</strong></p>
 
-    <p class="result-dialog-note">Vui lòng bàn giao thông tin đăng nhập cho cầu thủ.</p>
+    <p class="dialog-note">Vui lòng bàn giao thông tin đăng nhập cho cầu thủ.</p>
 
-    <form method="dialog" class="result-dialog-actions">
+    <form method="dialog" class="dialog-actions">
         <button type="submit" class="save-btn">OK</button>
     </form>
 </dialog>
@@ -193,7 +193,7 @@
 
 
 <% if (updatedPlayer != null) { %>
-<dialog id="result-dialog" class="result-dialog">
+<dialog id="result-dialog" class="app-dialog">
     <h3>Cập nhật cầu thủ thành công!</h3>
 
     <p>Họ và tên: <strong><%= HTMLUtil.escape(updatedPlayer.getFullName()) %>
@@ -201,9 +201,9 @@
     <p>Tài khoản: <strong><%= HTMLUtil.escape(updatedPlayer.getUsername()) %>
     </strong></p>
 
-    <p class="result-dialog-note">Thông tin cầu thủ đã được cập nhật thành công.</p>
+    <p class="dialog-note">Thông tin cầu thủ đã được cập nhật thành công.</p>
 
-    <form method="dialog" class="result-dialog-actions">
+    <form method="dialog" class="dialog-actions">
         <button type="submit" class="save-btn">OK</button>
     </form>
 </dialog>

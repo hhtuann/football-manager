@@ -90,6 +90,7 @@
 
         response.sendRedirect(request.getContextPath() + "/index.jsp?page=player-edit&id=" + playerId);
         return;
+
     } catch (IllegalArgumentException | DateTimeException e) {
         currentSession.setAttribute("error", "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!");
     } catch (SQLException e) {
