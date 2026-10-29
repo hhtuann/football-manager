@@ -153,11 +153,11 @@ docker exec -i football-postgres psql -U football_app -d football_db < database/
 
 ![Form đã điền](docs/screenshots/05-add-player-filled.png)
 
-**6. Thêm thành công** — hệ thống tự sinh mã `CT053` và tài khoản/mật khẩu mặc định:
+**6. Thêm thành công** — hệ thống tự sinh mã `CT054` và tài khoản/mật khẩu mặc định:
 
 ![Thêm thành công](docs/screenshots/06-add-player-success.png)
 
-**7. Tìm kiếm cầu thủ mới** — cầu thủ `CT053` đã có trong hệ thống:
+**7. Tìm kiếm cầu thủ mới** — cầu thủ `CT054` đã có trong hệ thống:
 
 ![Kết quả tìm kiếm](docs/screenshots/07-search-result.png)
 
