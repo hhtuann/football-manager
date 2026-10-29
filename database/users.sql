@@ -50,7 +50,7 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO managers (user_id)
 SELECT id
 FROM users
-WHERE username = 'nghiemcd'
+WHERE username = 'QL001'
 ON CONFLICT DO NOTHING;
 
 -- ==========================================
@@ -61,7 +61,7 @@ INSERT INTO staff (user_id, position)
 SELECT id,
        'Nhân viên Ban tổ chức'
 FROM users
-WHERE username = 'anlv'
+WHERE username = 'NV001'
 ON CONFLICT DO NOTHING;
 
 -- ==========================================
