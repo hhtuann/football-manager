@@ -51,11 +51,10 @@ public class PlayerDAO extends UserDAO {
         return players;
     }
 
-
     public boolean addPlayer(Player player) throws SQLException {
         String sqlUser = """
                 INSERT INTO users (username, password_hash, full_name, dob, email, phone)
-                VALUES (?, crypt(?, gen_salt('bf', 12)), ?, ?, NULLIF(BTRIM(?), ''), NULLIF(BTRIM(?), ''))
+                VALUES (?, crypt(?, gen_salt('bf', 12)), ?, ?, ?, ?)
                 RETURNING id
                 """;
 
@@ -106,6 +105,64 @@ public class PlayerDAO extends UserDAO {
 
                 player.setId(userId);
                 player.setUsername(username);
+                return true;
+
+            } catch (SQLException | RuntimeException e) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+                throw e;
+            }
+        }
+    }
+
+    public boolean updatePlayer(Player player) throws SQLException {
+        String sqlUser = """
+                UPDATE users
+                SET full_name = ?, dob = ?, email = ?, phone = ?
+                WHERE id = ?
+                """;
+
+        String sqlPlayer = """
+                UPDATE players
+                SET nationality = ?, primary_position = ?, height_cm = ?, weight_kg = ?
+                WHERE user_id = ?
+                """;
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                int updatedUser, updatedPlayer;
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlUser)) {
+                    ps.setString(1, player.getFullName());
+                    ps.setObject(2, player.getDob());
+                    ps.setString(3, player.getEmail());
+                    ps.setString(4, player.getPhone());
+                    ps.setInt(5, player.getId());
+
+                    updatedUser = ps.executeUpdate();
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlPlayer)) {
+                    ps.setString(1, player.getNationality());
+                    ps.setString(2, player.getPrimaryPosition());
+                    ps.setDouble(3, player.getHeightCm());
+                    ps.setDouble(4, player.getWeightKg());
+                    ps.setInt(5, player.getId());
+
+                    updatedPlayer = ps.executeUpdate();
+                }
+
+                if (updatedUser != 1 || updatedPlayer != 1) {
+                    conn.rollback();
+                    return false;
+                }
+
+                conn.commit();
                 return true;
 
             } catch (SQLException | RuntimeException e) {

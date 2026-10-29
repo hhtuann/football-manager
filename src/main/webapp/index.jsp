@@ -29,6 +29,7 @@
         case "home" -> "/WEB-INF/views/gdHome.jsp";
         case "player-search" -> "/WEB-INF/views/gdPlayerSearch.jsp";
         case "player-add" -> "/WEB-INF/views/gdPlayerForm.jsp";
+        case "player-edit" -> "/WEB-INF/views/gdPlayerForm.jsp";
         default -> null;
     };
 
@@ -41,6 +42,7 @@
         case "home" -> true;
         case "player-search" -> currentUser instanceof Staff;
         case "player-add" -> currentUser instanceof Staff;
+        case "player-edit" -> currentUser instanceof Staff;
         default -> false;
     };
 

@@ -116,24 +116,38 @@
     border-bottom: none;
 }
 
-.search-results td button {
+.search-results td button,
+.search-results td a.edit-btn,
+.search-results td a.delete-btn{
+    display: inline-block;
     padding: 7px 12px;
     border-radius: 10px;
     background: #edf6f0;
     font: inherit;
     font-size: 14px;
+    text-decoration: none;
 }
 
-.edit-btn {
+.search-results td .edit-btn {
     border: 1px solid #0e5a3c;
     color: #0e5a3c;
 }
 
-.delete-btn {
+.search-results td .edit-btn:hover {
+    background: #0e5a3c;
+    color: white;
+}
+
+.search-results td .delete-btn {
     margin-left: 4px;
     border: 1px solid #c73535;
-    background: #fff2f2 !important;
+    background: #fff2f2;
     color: #c73535;
+}
+
+.search-results td .delete-btn:hover {
+    background: #c73535;
+    color: white;
 }
 
 .search-results td button:disabled {

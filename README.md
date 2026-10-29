@@ -13,7 +13,7 @@ Hệ thống hỗ trợ Ban tổ chức giải quản lý toàn bộ dữ liệu
 
 | # | Chức năng | Mô tả | Trạng thái |
 |---|-----------|-------|------------|
-| 1 | **Quản lý thông tin cầu thủ** | Tìm kiếm, thêm mới cầu thủ (sửa/xoá đang phát triển) | 🟡 Một phần — hoàn thành luồng *thêm cầu thủ* + tìm kiếm, đăng nhập/đăng xuất |
+| 1 | **Quản lý thông tin cầu thủ** | Tìm kiếm, thêm mới, sửa thông tin cầu thủ (xoá đang phát triển) | 🟡 Hoàn thành luồng *thêm cầu thủ*, *sửa cầu thủ*, *tìm kiếm* + đăng nhập/đăng xuất |
 | 2 | **Đăng ký cầu thủ thi đấu cho trận đấu** | Đội bóng đăng ký danh sách cầu thủ tham dự mỗi trận | ⚪ Đang phát triển |
 | 3 | **Cập nhật kết quả thi đấu** | Nhập tỷ số, cập nhật kết quả các trận đấu | ⚪ Đang phát triển |
 
@@ -40,7 +40,7 @@ football-manager/
 │   └── util/                    # Tiện ích (HTMLUtil chống XSS)
 ├── src/main/webapp/
 │   ├── index.jsp                # Front controller điều hướng trang
-│   ├── doLogin.jsp / doLogout.jsp / doAddPlayer.jsp   # Xử lý POST
+│   ├── doLogin.jsp / doLogout.jsp / doAddPlayer.jsp / doEditPlayer.jsp   # Xử lý POST
 │   ├── WEB-INF/views/           # Các giao diện (gdHome, gdLogin, ...)
 │   └── assets/                  # CSS, JS
 ├── docker-compose.yaml
@@ -171,6 +171,46 @@ docker exec -i football-postgres psql -U football_app -d football_db < database/
    - Thêm bản ghi vào bảng `players` (quốc tịch, vị trí, chiều cao, cân nặng);
    - Commit — nếu lỗi sẽ rollback toàn bộ.
 4. Thành công: redirect về form, hiển thị hộp thoại thông tin tài khoản để bàn giao cho cầu thủ.
+
+## Luồng demo: Sửa thông tin cầu thủ (Chức năng 1)
+
+Nhân viên tìm cầu thủ cần sửa trong danh sách, bấm **Sửa**, hệ thống hiển thị form đã điền sẵn thông tin hiện tại; sau khi lưu, thay đổi được cập nhật vào CSDL.
+
+### Các bước thực hiện
+
+| # | Màn hình | Mô tả |
+|---|----------|-------|
+| 1 | Tìm cầu thủ | Bấm **Sửa** trên hàng của cầu thủ cần chỉnh sửa |
+| 2 | Form sửa | Thông tin hiện tại được điền sẵn; nhân viên chỉnh các trường cần thay đổi |
+| 3 | Lưu | Bấm **Lưu thay đổi** |
+| 4 | Kết quả | Hộp thoại xác nhận cập nhật thành công |
+| 5 | Tìm kiếm lại | Thông tin cầu thủ đã được cập nhật |
+
+### Màn hình
+
+**1. Form sửa cầu thủ** — thông tin hiện tại của cầu thủ `CT054` điền sẵn:
+
+![Form sửa cầu thủ](docs/screenshots/08-edit-player-form.png)
+
+**2. Chỉnh sửa** — đổi email, chiều cao, cân nặng:
+
+![Đã chỉnh sửa](docs/screenshots/09-edit-player-changed.png)
+
+**3. Cập nhật thành công**:
+
+![Cập nhật thành công](docs/screenshots/10-edit-player-success.png)
+
+**4. Thông tin đã cập nhật** — cầu thủ `CT054` với email/chiều cao/cân nặng mới:
+
+![Kết quả cập nhật](docs/screenshots/11-edit-player-result.png)
+
+### Diễn giải luồng (kỹ thuật)
+
+1. Từ danh sách tìm kiếm (`gdPlayerSearch.jsp`), bấm **Sửa** → `index.jsp?page=player-edit&id=...`
+2. `gdPlayerForm.jsp` tìm cầu thủ trong danh sách của phiên, lưu vào `selectedPlayer` và hiển thị form điền sẵn; form submit tới `doEditPlayer.jsp`.
+3. `doEditPlayer.jsp` kiểm tra phiên đăng nhập (phải là `Staff`), kiểm tra dữ liệu, gọi `PlayerDAO.updatePlayer()`.
+4. `updatePlayer()` mở transaction cập nhật bảng `users` (họ tên, ngày sinh, email, SĐT) và bảng `players` (quốc tịch, vị trí, chiều cao, cân nặng); chỉ commit khi cả hai bản ghi đều cập nhật thành công, ngược lại rollback.
+5. Thành công: redirect về form, hiển thị hộp thoại xác nhận.
 
 ## Giấy phép
 

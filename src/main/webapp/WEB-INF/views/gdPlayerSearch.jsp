@@ -102,7 +102,8 @@
                     <td><%= HTMLUtil.escape(player.getPhone()) %>
                     </td>
                     <td>
-                        <button class="edit-btn" type="button" disabled>Sửa</button>
+                        <a class="edit-btn"
+                           href="${pageContext.request.contextPath}/index.jsp?page=player-edit&amp;id=<%= player.getId() %>">Sửa</a>
                         <button class="delete-btn" type="button" disabled>Xoá</button>
                     </td>
                 </tr>
