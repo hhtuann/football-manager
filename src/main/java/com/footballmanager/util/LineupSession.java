@@ -1,0 +1,153 @@
+package com.footballmanager.util;
+
+import com.footballmanager.model.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+/**
+ * Session-only navigation cache. Call while holding the HttpSession monitor.
+ */
+public final class LineupSession {
+    public Tournament tournament;
+    public List<Season> seasons = new ArrayList<>();
+    public Season season;
+    public List<Round> rounds = new ArrayList<>();
+    public Round round;
+    public List<Match> matches = new ArrayList<>();
+    public Match match;
+    public MatchClub side;
+    public List<ClubPlayer> players = new ArrayList<>();
+    private String version = UUID.randomUUID().toString();
+    private final String csrf = UUID.randomUUID().toString() + UUID.randomUUID();
+    public String flash;
+
+    public static LineupSession get(HttpSession session) {
+        Object value = session.getAttribute("cn2Context");
+        if (value instanceof LineupSession) return (LineupSession) value;
+        LineupSession context = new LineupSession();
+        session.setAttribute("cn2Context", context);
+        return context;
+    }
+
+    public String version() {
+        return version;
+    }
+
+    public String csrf() {
+        return csrf;
+    }
+
+    public void changed() {
+        version = UUID.randomUUID().toString();
+    }
+
+    public void requireVersion(HttpServletRequest request) {
+        if (!version.equals(single(request, "flow")))
+            throw new IllegalArgumentException("Trang đã cũ hoặc ngữ cảnh đã thay đổi. Vui lòng chọn lại từ tìm mùa giải.");
+    }
+
+    public void requireCsrf(HttpServletRequest request) {
+        String submitted = single(request, "csrf");
+        if (submitted == null || !MessageDigest.isEqual(csrf.getBytes(StandardCharsets.UTF_8), submitted.getBytes(StandardCharsets.UTF_8)))
+            throw new SecurityException("Phiên xác nhận không hợp lệ.");
+    }
+
+    public static String single(HttpServletRequest request, String name) {
+        String[] values = request.getParameterValues(name);
+        if (values == null) return null;
+        if (values.length != 1) throw new IllegalArgumentException("Tham số bị trùng: " + name);
+        return values[0];
+    }
+
+    public static int id(HttpServletRequest request, String name) {
+        String value = single(request, name);
+        try {
+            int id = Integer.parseInt(value);
+            if (id > 0) return id;
+        } catch (NumberFormatException ignored) {
+        }
+        throw new IllegalArgumentException("Mã ngữ cảnh không hợp lệ. Vui lòng chọn lại từ tìm mùa giải.");
+    }
+
+    public void requireSeason(HttpServletRequest request) {
+        requireVersion(request);
+        if (tournament == null || season == null || id(request, "tournamentId") != tournament.getId() || id(request, "seasonId") != season.getId())
+            throw new IllegalArgumentException("Mùa giải không còn trong ngữ cảnh hiện tại.");
+    }
+
+    public void requireRound(HttpServletRequest request) {
+        requireSeason(request);
+        if (round == null || id(request, "roundId") != round.getId())
+            throw new IllegalArgumentException("Vòng đấu không còn trong ngữ cảnh hiện tại.");
+    }
+
+    public void requireMatch(HttpServletRequest request) {
+        requireRound(request);
+        if (match == null || id(request, "matchId") != match.getId())
+            throw new IllegalArgumentException("Trận đấu không còn trong ngữ cảnh hiện tại.");
+    }
+
+    public void requireSide(HttpServletRequest request) {
+        requireMatch(request);
+        if (side == null || id(request, "matchClubId") != side.getId())
+            throw new IllegalArgumentException("Đội bóng không còn trong ngữ cảnh hiện tại.");
+    }
+
+    public void requireOptionalSide(HttpServletRequest request) {
+        if (request.getParameter("matchClubId") == null) return;
+        requireMatch(request);
+        int selectedId = id(request, "matchClubId");
+        for (MatchClub club : match.getMatchClubs()) if (club.getId() == selectedId) return;
+        throw new IllegalArgumentException("CLB không thuộc trận đấu hiện tại.");
+    }
+
+    public String query() {
+        return "flow=" + version + (tournament == null ? "" : "&tournamentId=" + tournament.getId())
+                + (season == null ? "" : "&seasonId=" + season.getId())
+                + (round == null ? "" : "&roundId=" + round.getId())
+                + (match == null ? "" : "&matchId=" + match.getId());
+    }
+
+    public void clearSeason() {
+        season = null;
+        rounds = new ArrayList<>();
+        clearRound();
+    }
+
+    public void clearRound() {
+        round = null;
+        matches = new ArrayList<>();
+        clearMatch();
+    }
+
+    public void clearMatch() {
+        match = null;
+        side = null;
+        players = new ArrayList<>();
+        flash = null;
+    }
+
+    public boolean locked() {
+        return match == null || match.isLineupLocked();
+    }
+
+    public static String role(String role) {
+        return "STARTING".equals(role) ? "Đá chính" : "SUBSTITUTE".equals(role) ? "Dự bị" : role;
+    }
+
+    public static String date(java.time.LocalDate value) {
+        return value == null ? "Chưa xác định" : value.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    public static String dateTime(java.time.LocalDateTime value) {
+        return value == null ? "Chưa xác định" : value.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
+
+    public static String status(String status) {
+        return "SCHEDULED".equals(status) ? "Chưa diễn ra" : "ONGOING".equals(status) ? "Đang diễn ra" : "FINISHED".equals(status) ? "Đã kết thúc" : status;
+    }
+}

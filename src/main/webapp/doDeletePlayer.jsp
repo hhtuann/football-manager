@@ -42,7 +42,7 @@
 
     } catch (SQLException e) {
         application.log("Lỗi xóa cầu thủ", e);
-        currentSession.setAttribute("deleteResult", "error");
+        currentSession.setAttribute("deleteResult", "23503".equals(e.getSQLState()) ? "referenced" : "error");
     }
 
     response.sendRedirect(request.getContextPath() + "/index.jsp?page=player-search");

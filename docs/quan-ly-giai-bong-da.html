@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống quản lí giải bóng đá vô địch quốc gia</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1c2b23;margin:0;background:#edf2ee;line-height:1.5;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+#topbar{width:100%;max-width:992px;margin:0 auto}
+.container{width:100%;max-width:992px;margin:0 auto;flex:1 0 auto;background:#fff;padding:18px 16px 40px;box-sizing:border-box}
+.login-center{max-width:430px;margin:48px auto 0}
+h1{font-size:20px;margin:6px 0}h2{font-size:17px;margin:0 0 12px;color:#0a3f2c}h3{font-size:15px;margin:0 0 8px;color:#0a3f2c}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+.tblwrap{border:1px solid #cfdcd4;border-radius:10px;overflow:auto;margin:8px 0;background:#fff}
+.tblwrap th,.tblwrap td{border-top:1px solid #dde7e0;padding:7px 10px;text-align:left;vertical-align:top}
+.tblwrap tr:first-child th{border-top:none}
+.tblwrap th{background:#e6f2ec;color:#0a3f2c;font-size:12.5px}
+.tblwrap.scroll{max-height:440px}
+.tblwrap.tall{max-height:560px}
+.tblwrap.scroll thead th,.tblwrap.tall thead th{position:sticky;top:0}
+tr.clickable{cursor:pointer}
+tr.clickable:hover{background:#eef6f1}
+.kv{border-collapse:collapse;width:100%;max-width:660px;margin:8px 0}
+.kv th,.kv td{border:1px solid #cfdcd4;padding:7px 10px;text-align:left;vertical-align:top;font-size:13.5px}
+.kv th{background:#e6f2ec;color:#0a3f2c;width:190px}
+label{display:block;font-weight:bold;margin:10px 0 3px;font-size:13px}
+input,select,textarea{padding:7px 9px;border:1px solid #a9c0b3;border-radius:8px;font:inherit;width:100%;max-width:360px;box-sizing:border-box;background:#fff;color:#1c2b23}
+input:focus,select:focus{outline:none;border-color:#0e5a3c;box-shadow:0 0 0 2px rgba(14,90,60,.12)}
+button{padding:7px 16px;border:1px solid #0e5a3c;border-radius:8px;background:#e9f4ee;color:#0a3f2c;cursor:pointer;font:inherit;box-shadow:0 1px 2px rgba(10,60,40,.10)}
+button:hover{background:#dceee4}
+button.primary{background:#0e5a3c;color:#fff}
+button.primary:hover{background:#0c4c33}
+button.danger{border-color:#a94442;color:#a94442;background:#fdf3f2}
+button.danger:hover{background:#f9e4e2}
+button.mini{padding:3px 10px;font-size:12.5px;box-shadow:none}
+button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.form-actions{margin-top:16px;display:flex;gap:10px}
+.searchrow{display:flex;gap:10px;margin:12px 0}
+.searchrow input{flex:1;max-width:none}
+.searchrow button{white-space:nowrap}
+.msg{padding:9px 12px;margin:0 0 12px;border:1px solid #0e5a3c;border-radius:8px;background:#e9f4ee}
+.msg.error{border-color:#a94442;background:#fdecea;color:#a94442}
+.err{color:#a94442}
+.muted{color:#5c6f66}.small{font-size:12.5px}
+.top{background:#0e5a3c;color:#fff}
+.top-in{max-width:960px;margin:0 auto;padding:12px 16px 10px}
+.top h1{color:#fff;font-size:18px;margin:0}
+.top .user{font-size:13px;margin-top:2px}
+.top .right{float:right;font-size:13px;margin-top:2px}
+.top .right a{color:#cfe9dc;cursor:pointer;text-decoration:underline}
+.top .breadcrumb{color:#cfe9dc;margin:6px 0 0;font-size:12.5px}
+.top .breadcrumb a{color:#fff;cursor:pointer;text-decoration:underline}
+.breadcrumb a,a[data-back],a[data-reset]{color:#0e5a3c;cursor:pointer;text-decoration:underline}
+.score{font-size:16px;text-align:center;margin:14px 0;color:#0a3f2c}
+.score .num{font-size:28px;font-weight:bold;color:#0e5a3c}
+.field-note{font-size:12.5px;color:#5c6f66;margin-top:2px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+.form-grid label{margin-top:12px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}
+.panel{border:1px solid #d7e4dc;border-radius:10px;padding:12px;background:#fbfdfc}
+.panel h3{margin:0 0 4px}
+.panel .tblwrap{max-height:320px;margin:8px 0}
+.panel .panel-actions{margin-top:6px}
+.roles{white-space:nowrap}
+.rolebox{padding:4px 12px;border:1px solid #a9c0b3;border-radius:7px;background:#f8fbf9;color:#0a3f2c;font-size:12.5px;box-shadow:none;margin:0 6px 4px 0}
+.rolebox:hover{background:#e9f4ee}
+.rolebox.on{background:#0e5a3c;border-color:#0e5a3c;color:#fff}
+.rolebox.on[data-v=SUBSTITUTE]{background:#b45309;border-color:#b45309}
+.rolebox.on[data-v=NONE]{background:#5c6f66;border-color:#5c6f66}
+footer{margin-top:4px;padding:10px 4px;color:#7d8f86;font-size:12px;text-align:center}
+footer a{color:#0e5a3c;cursor:pointer;text-decoration:underline}
+hr{border:none;border-top:1px solid #d7e4dc;margin:14px 0}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr}.cols2{grid-template-columns:1fr}.top .right{float:none}}
+</style>
+</head>
+<body>
+<div id="topbar"></div>
+<div class="container" id="app"></div>
+<script>
+"use strict";
+/* =====================================================================
+   HE THONG QUAN LY GIAI BONG DA VO DICH QUOC GIA - Module M1 (demo offline)
+   Mo phong Analysis Class Diagram: 19 entity class + 4 enum.
+   Du lieu luu trong localStorage. Mo file truc tiep bang Chrome, khong can mang.
+   ===================================================================== */
+
+/* ---------- tien ich ---------- */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=(n,l=3)=>String(n).padStart(l,'0');
+function stripAccents(s){return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');}
+function norm(s){return stripAccents(String(s||'')).toLowerCase();}
+function fmtD(iso){if(!iso)return'—';const[y,m,d]=iso.split('-');return d+'/'+m+'/'+y;}
+function fmtDT(dt){if(!dt)return'—';const[d,t]=dt.split('T');const[y,m,dd]=d.split('-');const[hh,mm]=t.split(':');return hh+'h'+mm+' — '+dd+'/'+m+'/'+y;}
+function fmtTime(dt){const t=dt.split('T')[1];return t.slice(0,5).replace(':','h');}
+function fmtDshort(dt){const d=dt.split('T')[0];const[y,m,dd]=d.split('-');return dd+'/'+m+'/'+y;}
+function ageOf(dob){if(!dob)return null;const b=new Date(dob);const n=new Date();let a=n.getFullYear()-b.getFullYear();if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate()))a--;return a;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- thong bao (msg hien o dau trang, den lan thao tac ke tiep) ---------- */
+let PENDING_MSG=null;
+function flash(msg,isErr){PENDING_MSG={msg,isErr:!!isErr};}
+
+/* ---------- store ---------- */
+const LS_KEY='vlms_m1_db_v2';
+const SEED_VERSION=2;
+let DB=null;
+function saveDB(){
+  DB.meta.savedAt=Date.now();
+  try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){flash('Không lưu được vào localStorage.',true);}
+}
+function loadDB(){
+  try{const raw=localStorage.getItem(LS_KEY);if(raw){const d=JSON.parse(raw);if(d&&d.meta&&d.meta.version===SEED_VERSION){DB=d;return;}}}catch(e){}
+  DB=makeSeed();saveDB();
+}
+const byId=(t,id)=>DB[t].find(x=>x.id===id);
+const nextId=t=>DB[t].reduce((m,x)=>Math.max(m,x.id),0)+1;
+
+/* ---------- du lieu mau ---------- */
+const POS={TM:'Thủ môn',TV:'Trung vệ',HT:'Hậu vệ trái',HP:'Hậu vệ phải',MV:'Tiền vệ',TVC:'Tiền vệ công',TI:'Tiền đạo'};
+const POS_GROUP={'Thủ môn':'GK','Trung vệ':'DF','Hậu vệ trái':'DF','Hậu vệ phải':'DF','Tiền vệ':'MF','Tiền vệ công':'MF','Tiền đạo':'FW'};
+const VN='Việt Nam';
+
+function makeSeed(){
+  const R=mulberry32(260916);
+  const ri=(a,b)=>a+Math.floor(R()*(b-a+1));
+  const pick=a=>a[Math.floor(R()*a.length)];
+
+  const db={meta:{version:SEED_VERSION,savedAt:0},session:null,
+    users:[],stadiums:[],clubs:[],tournaments:[],seasons:[],rules:[],rounds:[],
+    matches:[],matchClubs:[],clubPlayers:[],matchPlayers:[],events:[]};
+  let seq={users:0,stadiums:0,clubs:0,tournaments:0,rules:0,seasons:0,rounds:0,matches:0,matchClubs:0,clubPlayers:0,matchPlayers:0,events:0};
+  const nid=t=>++seq[t];
+  const phones=new Set();
+  const mkPhone=()=>{let p;do{p='0'+pad(ri(100000000,999999999),9);}while(phones.has(p));phones.add(p);return p;};
+
+  /* staff — dung ch scenario: anlv / anlv@123 */
+  const staff={id:nid('users'),type:'staff',username:'anlv',password:'anlv@123',fullName:'Lê Văn An',
+    dob:'1996-03-15',email:'anlv@vl.vn',phone:mkPhone(),position:'Nhân viên Ban tổ chức'};
+  db.users.push(staff);
+
+  /* san van dong va CLB */
+  const mkStadium=(name,capacity,address)=>({id:nid('stadiums'),name,capacity,address});
+  const sts=[mkStadium('SVĐ Hàng Đẫy',22500,'Đ. Trịnh Thái Tùng, Đống Đa, Hà Nội'),
+             mkStadium('SVĐ Thiên Trường',25000,'Tp. Nam Định, Nam Định'),
+             mkStadium('SVĐ Thanh Hóa',14000,'Tp. Thanh Hóa, Thanh Hóa'),
+             mkStadium('SVĐ Lạch Tray',28000,'Ngô Quyền, Hải Phòng'),
+             mkStadium('SVĐ 19-8',15000,'Tp. Nha Trang, Khánh Hòa')];
+  db.stadiums.push(...sts);
+
+  const LAST=['Nguyễn','Trần','Lê','Phạm','Hoàng','Phan','Vũ','Đặng','Bùi','Đỗ','Ngô','Dương'];
+  const MID=['Văn','Hữu','Đức','Quang','Minh','Thành','Tuấn','Xuân','Công','Đình','Hoàng','Anh'];
+  const FIRST=['An','Bách','Bảo','Cường','Dũng','Duy','Hải','Hòa','Hùng','Huy','Khanh','Khánh','Lâm','Long','Nam','Nghĩa','Phong','Quân','Sang','Sơn','Tài','Thắng','Thịnh','Trung','Tuấn','Vinh','Vũ','Bình','Giang','Hà','Khoa','Lộc','Nhật','Phúc','Tâm','Thanh','Triều','Vy'];
+  const vnName=()=>pick(LAST)+' '+pick(MID)+' '+pick(FIRST);
+  const LATFIRST=['Alan','Bruno','Evaristo','Diego','Felipe','Geovane','Hendrio','Ivan','Jaja','Lucas','Marcos','Olaha','Pablo','Rafael','Thiago','Uche','Yakubu','Zito'];
+  const LATLAST=['Sena','Silva','Santos','Oliveira','Costa','Souza','Traoré','Kelechi','Ettien','Dias','Moreira','Nogueira'];
+  const latName=()=>pick(LATFIRST)+' '+pick(LATLAST);
+  const FOREIGN_NAT=['Brasil','Nigeria','Bờ Biển Ngà','Angola','Serbia','Thái Lan'];
+
+  let pct=0;
+  const mkPlayer=(opt)=>{
+    const code='CT'+pad(++pct);
+    const u={id:nid('users'),type:'player',code,username:code,password:opt.phone||mkPhone(),
+      fullName:opt.name,dob:opt.dob||('19'+ri(95,104)+'-'+pad(ri(1,12),2)+'-'+pad(ri(1,28),2)),
+      email:norm(stripAccents(opt.name)).replace(/\s+/g,'.')+'@player.vn',phone:opt.phone||mkPhone(),
+      nationality:opt.nat||VN,position:opt.pos,
+      height:opt.h||ri(165,186),weight:opt.w||ri(60,80)};
+    db.users.push(u);
+    if(opt.clubId!=null)db.clubPlayers.push({id:nid('clubPlayers'),clubId:opt.clubId,userId:u.id,shirtNumber:opt.shirt});
+    return u;
+  };
+
+  const mkClub=(fullName,shortName,fy,stadiumId,coach)=>({
+    id:nid('clubs'),fullName,shortName,foundingYear:fy,coachName:coach,stadiumId,managerId:null});
+  const mkManager=(club,fullName)=>{const key='hlv.'+norm(stripAccents(fullName)).split(' ').pop();
+    const u={id:nid('users'),type:'manager',username:key,password:'hlv@123',fullName,
+      dob:'197'+ri(0,9)+'-0'+ri(1,9)+'-1'+ri(0,9),email:key+'@vl.vn',phone:mkPhone()};
+    db.users.push(u);club.managerId=u.id;return u;};
+
+  const HAN=mkClub('Câu lạc bộ bóng đá Hà Nội','Hà Nội FC',2006,sts[0].id,'Chu Đình Nghiêm');
+  const VIE=mkClub('Câu lạc bộ bóng đá Viettel','Viettel FC',1954,sts[0].id,'Nguyễn Đức Thinh');
+  const NAD=mkClub('Câu lạc bộ bóng đá Thép Xanh Nam Định','Nam Định FC',1965,sts[1].id,'Vũ Hồng Việt');
+  const THO=mkClub('Câu lạc bộ bóng đá Thanh Hóa','Thanh Hóa FC',2009,sts[2].id,'Aleksandar Petrović');
+  const HPH=mkClub('Câu lạc bộ bóng đá Hải Phòng','Hải Phòng FC',1952,sts[3].id,'Chu Văn Sơn');
+  const KHO=mkClub('Câu lạc bộ bóng đá Khánh Hòa','Khánh Hòa FC',1977,sts[4].id,'Nguyễn Huy Hoàng');
+  db.clubs.push(HAN,VIE,NAD,THO,HPH,KHO);
+  db.clubs.forEach(c=>mkManager(c,c.coachName));
+
+  /* doi hinh Ha Noi — theo ten trong scenario (Nguyen Quang Hai CHUA co, nguoi dung tu them qua UC1) */
+  [
+    {name:'Trần Văn Công',shirt:1,pos:POS.TM},{name:'Nguyễn Anh Khoa',shirt:29,pos:POS.TM},
+    {name:'Đinh Xuân Trường',shirt:2,pos:POS.TV},{name:'Santos Silva',shirt:3,pos:POS.TV,nat:'Brasil'},
+    {name:'Nguyễn Hoàng Anh',shirt:4,pos:POS.TV},{name:'Phạm Tuấn Kiệt',shirt:5,pos:POS.TV},
+    {name:'Vũ Đức Luận',shirt:6,pos:POS.MV},{name:'Đỗ Minh Đức',shirt:8,pos:POS.MV},
+    {name:'Marcus Kelechi',shirt:77,pos:POS.MV,nat:'Nigeria'},{name:'Lương Nguyên Phong',shirt:11,pos:POS.TI},
+    {name:'João Rafael',shirt:9,pos:POS.TI,nat:'Brasil'},{name:'Idrissa Traoré',shirt:27,pos:POS.TVC,nat:'Bờ Biển Ngà'},
+    {name:'Bùi Quang Tùng',shirt:17,pos:POS.HT},{name:'Phan Thanh Bình',shirt:22,pos:POS.HP},
+    {name:'Lý Công Hoàn',shirt:15,pos:POS.MV},{name:'Trịnh Đình Hòa',shirt:16,pos:POS.TV},
+    {name:'Ngô Nhật Minh',shirt:19,pos:POS.HT},{name:'Trần Đình Hiếu',shirt:21,pos:POS.MV},
+    {name:'Lê Hoàng Vinh',shirt:23,pos:POS.TI},{name:'Đinh Gia Bảo',shirt:25,pos:POS.TI},
+  ].forEach(p=>mkPlayer({...p,clubId:HAN.id}));
+
+  /* Viettel — theo scenario: Bách, Toản, Gia Huy, Thành Lộc, Hoàng Nam */
+  [
+    {name:'Nguyễn Văn Bách',shirt:1,pos:POS.TM},{name:'Phạm Văn Huy',shirt:30,pos:POS.TM},
+    {name:'Đào Quang Việt',shirt:3,pos:POS.TV},{name:'Nguyễn Việt Anh',shirt:4,pos:POS.TV},
+    {name:'Trần Quốc Toản',shirt:5,pos:POS.TV},{name:'Bùi Tiến Dũng',shirt:6,pos:POS.HT},
+    {name:'Lương Thanh Long',shirt:17,pos:POS.HP},{name:'Bruno Oliveira',shirt:8,pos:POS.MV,nat:'Brasil'},
+    {name:'Phạm Gia Huy',shirt:20,pos:POS.MV},{name:'Evaristo Dias',shirt:10,pos:POS.TVC,nat:'Angola'},
+    {name:'Nguyễn Hoàng Nam',shirt:7,pos:POS.TI},{name:'Vũ Thành Lộc',shirt:11,pos:POS.TI},
+    {name:'Trần Văn Toàn',shirt:9,pos:POS.TI},{name:'Đặng Văn Lâm',shirt:18,pos:POS.MV},
+    {name:'Hoàng Văn Kiên',shirt:15,pos:POS.TV},{name:'Mạc Hồng Quân',shirt:21,pos:POS.MV},
+    {name:'Nguyễn Thanh Tùng',shirt:24,pos:POS.TV},{name:'Vũ Minh Trí',shirt:26,pos:POS.TI},
+  ].forEach(p=>mkPlayer({...p,clubId:VIE.id}));
+
+  /* 4 CLB con lai — sinh tu dong (18 nguoi: 2 TM, 6 HV, 6 TV, 4 TI) */
+  const genClub=(club,nForeign)=>{
+    const shirts=[1,30,3,4,5,6,17,22,8,15,77,20,10,21,9,11,19,25];
+    const poss=[POS.TM,POS.TM,POS.TV,POS.TV,POS.TV,POS.TV,POS.HT,POS.HP,POS.MV,POS.MV,POS.MV,POS.MV,POS.TVC,POS.TVC,POS.TI,POS.TI,POS.TI,POS.TI];
+    let fi=0;
+    for(let i=0;i<18;i++){
+      const foreign=i>=18-nForeign;
+      mkPlayer({name:foreign?latName():vnName(),shirt:shirts[i],pos:poss[i],
+        nat:foreign?FOREIGN_NAT[fi++%FOREIGN_NAT.length]:VN,clubId:club.id});
+    }
+  };
+  genClub(NAD,3);genClub(THO,2);genClub(HPH,2);genClub(KHO,3);
+
+  /* giai - mua - dieu le - vong dau */
+  db.tournaments.push({id:nid('tournaments'),name:'LPBank V.League 1'});
+  const T1=db.tournaments[0];
+  const rule={id:nid('rules'),requiredMainPlayers:11,maxBenchPlayers:7,maxSubstitutions:3,
+    yellowCardsToSuspend:3,ageLimit:40,maxForeignPlayers:3};
+  db.rules.push(rule);
+  const S26={id:nid('seasons'),code:'VLE2026',tournamentId:T1.id,year:2026,startDate:'2026-08-19',endDate:'2026-11-30',status:'Đang diễn ra',ruleId:rule.id};
+  const S25={id:nid('seasons'),code:'VLE2025',tournamentId:T1.id,year:2025,startDate:'2025-08-15',endDate:'2025-11-28',status:'Đã kết thúc',ruleId:rule.id};
+  db.seasons.push(S26,S25);
+
+  const roundDefs=[
+    {code:'R01',name:'Vòng 1',d:'2026-08-19',st:'Đã kết thúc'},
+    {code:'R02',name:'Vòng 2',d:'2026-08-26',st:'Đã kết thúc'},
+    {code:'R03',name:'Vòng 3',d:'2026-09-02',st:'Đã kết thúc'},
+    {code:'R04',name:'Vòng 4',d:'2026-09-09',st:'Đã kết thúc'},
+    {code:'R05',name:'Vòng 5',d:'2026-09-16',st:'Đang diễn ra'},
+    {code:'R06',name:'Vòng 6',d:'2026-09-23',st:'Chưa diễn ra'},
+  ].map(r=>({id:nid('rounds'),seasonId:S26.id,code:r.code,name:r.name,
+    startTime:r.d+'T17:00:00',endTime:r.d+'T21:00:00',status:r.st}));
+  db.rounds.push(...roundDefs);
+
+  const pairings=[
+    [[HAN,NAD],[VIE,THO],[HPH,KHO]], /* Vong 1 */
+    [[HAN,THO],[VIE,KHO],[NAD,HPH]], /* Vong 2 */
+    [[HAN,KHO],[VIE,HPH],[THO,NAD]], /* Vong 3 */
+    [[HAN,HPH],[VIE,NAD],[THO,KHO]], /* Vong 4 */
+    [[HAN,VIE],[NAD,THO],[HPH,KHO]], /* Vong 5 */
+    [[HAN,THO],[VIE,NAD],[KHO,HPH]], /* Vong 6 */
+  ];
+
+  const mkMatch=(round,home,away,kick)=>{
+    const m={id:nid('matches'),code:'TR'+pad(seq.matches),roundId:round.id,kickoffTime:kick,status:'SCHEDULED'};
+    seq.matches++;
+    db.matches.push(m);
+    db.matchClubs.push({id:nid('matchClubs'),matchId:m.id,clubId:home.id,role:'HOME'});
+    db.matchClubs.push({id:nid('matchClubs'),matchId:m.id,clubId:away.id,role:'AWAY'});
+    return m;
+  };
+  const kicks=['17:00','19:00','19:00'];
+  roundDefs.forEach((rd,i2)=>{
+    pairings[i2].forEach((pr,i)=>{mkMatch(rd,pr[0],pr[1],rd.startTime.slice(0,11)+kicks[i]+':00');});
+  });
+
+  /* ---- dang ky doi hinh tu dong + sinh su kien cho cac vong da ket thuc ---- */
+  const byIdIn=(d,t,id)=>d[t].find(x=>x.id===id);
+  function registerAuto(m,clubId,availFn){
+    const mc=db.matchClubs.find(x=>x.matchId===m.id&&x.clubId===clubId);
+    const sq=db.clubPlayers.filter(cp=>cp.clubId===clubId)
+      .map(cp=>({cp,user:byIdIn(db,'users',cp.userId)}))
+      .filter(p=>availFn?availFn(p):true)
+      .sort((a,b)=>{
+        const g=x=>({GK:0,DF:1,MF:2,FW:3})[POS_GROUP[x.user.position]];
+        return (g(a)-g(b))||(a.cp.shirtNumber-b.cp.shirtNumber);});
+    const need={GK:1,DF:4,MF:4,FW:2};
+    const cnt={GK:0,DF:0,MF:0,FW:0};
+    const starters=[],rest=[];
+    sq.forEach(p=>{const g=POS_GROUP[p.user.position];
+      if(cnt[g]<need[g]){cnt[g]++;starters.push(p);}else rest.push(p);});
+    const bench=[rest[0]];
+    for(let i=1;i<rest.length&&bench.length<7;i++)bench.push(rest[i]);
+    const mk=(p,role)=>({id:nid('matchPlayers'),matchClubId:mc.id,clubPlayerId:p.cp.id,role});
+    starters.forEach(p=>{const o=mk(p,'STARTING');db.matchPlayers.push(o);p.mpId=o.id;});
+    bench.forEach(p=>{const o=mk(p,'SUBSTITUTE');db.matchPlayers.push(o);p.mpId=o.id;});
+    return {starters,bench};
+  }
+  const pushEv=(m,kind,minute,extra,primaryId,secondaryId,goalType,note)=>{
+    db.events.push({id:nid('events'),matchId:m.id,kind,minute,extraMinute:extra||0,note:note||'',
+      primaryId:primaryId||null,secondaryId:secondaryId||null,goalType:goalType||null});};
+
+  db.matches.filter(m=>byIdIn(db,'rounds',m.roundId).status==='Đã kết thúc').forEach(m=>{
+    const mcs=db.matchClubs.filter(x=>x.matchId===m.id);
+    const A=registerAuto(m,mcs[0].clubId),B=registerAuto(m,mcs[1].clubId);
+    const atk=L=>L.starters.filter(p=>['MF','FW'].includes(POS_GROUP[p.user.position]));
+    const scorers=[];
+    const gA=ri(0,2),gB=ri(0,2);
+    for(let i=0;i<gA;i++)scorers.push(pick(atk(A)));
+    for(let i=0;i<gB;i++)scorers.push(pick(atk(B)));
+    scorers.forEach(p=>{
+      const sameSide=A.starters.includes(p)?A:B;
+      const pool=atk(sameSide).filter(x=>x!==p);
+      const assist=(R()<0.45&&pool.length)?pick(pool):null;
+      pushEv(m,'GOAL',ri(8,90),0,p.mpId,assist?assist.mpId:null,'NORMAL','');
+    });
+    const nY=ri(1,2);
+    for(let i=0;i<nY;i++){const s=pick(R()<0.5?A.starters:B.starters);
+      if(s)pushEv(m,'YELLOW',ri(20,88),0,s.mpId,null,null,R()<0.5?'Ngắt trò chơi nguy hiểm':'');}
+    if(R()<0.6){const side=R()<0.5?A:B;const outs=side.starters.slice(1);
+      const out=outs.length?pick(outs):null;
+      const inP=side.bench.find(p=>POS_GROUP[p.user.position]!=='GK');
+      if(out&&inP)pushEv(m,'SUB',ri(55,80),0,out.mpId,inP.mpId,null,'');}
+    m.status='FINISHED';
+  });
+
+  /* script hoa the phat de demo "treo gio":
+     Phan Thanh Binh (HAN) dau the vang o Vong 2,3,4 -> treo gio tai Vong 5 */
+  const binh=db.users.find(u=>u.fullName==='Phan Thanh Bình');
+  const binhCp=db.clubPlayers.find(cp=>cp.userId===binh.id);
+  roundDefs.slice(1,4).forEach(rd=>{
+    const mm=db.matches.filter(x=>x.roundId===rd.id)
+      .find(x=>db.matchClubs.some(mc=>mc.matchId===x.id&&mc.clubId===HAN.id));
+    if(!mm)return;
+    const mcHAN=db.matchClubs.find(mc=>mc.matchId===mm.id&&mc.clubId===HAN.id);
+    const mp=db.matchPlayers.find(p=>p.matchClubId===mcHAN.id&&p.clubPlayerId===binhCp.id);
+    if(mp)pushEv(mm,'YELLOW',ri(55,85),0,mp.id,null,null,'Phạm lỗi trước vòng cấm');
+  });
+  /* the do: cau thu Nam Dinh o Vong 4 -> treo gio Vong 5 */
+  const m4=db.matches.filter(x=>x.roundId===roundDefs[3].id)
+    .find(x=>db.matchClubs.some(mc=>mc.matchId===x.id&&mc.clubId===NAD.id));
+  if(m4){
+    const mcNAD=db.matchClubs.find(mc=>mc.matchId===m4.id&&mc.clubId===NAD.id);
+    const mps=db.matchPlayers.filter(p=>p.matchClubId===mcNAD.id);
+    const mp=mps[3]||mps[0];
+    if(mp)pushEv(m4,'RED',ri(60,85),0,mp.id,null,null,'Phản ứng với trọng tài');
+  }
+
+  /* ==== DU LIEU MAU DEMO UC3 ====
+     TR025 (Ha Noi FC vs Viettel FC, Vong 5): da dang ky du doi hinh 2 ben
+     (bo cau thu bi treo gio), trang thai "Dang dien ra", chua co su kien. */
+  const m5=db.matches.filter(x=>x.roundId===roundDefs[4].id)
+    .find(x=>db.matchClubs.some(mc=>mc.matchId===x.id&&mc.clubId===HAN.id));
+  if(m5){
+    /* tap cau thu bi treo gio cho tran nay (derived: the phat cac tran truoc) */
+    const counts={};
+    db.matches.filter(x=>x.kickoffTime<m5.kickoffTime).forEach(pm=>{
+      db.events.forEach(e=>{
+        if(e.matchId!==pm.id||(e.kind!=='YELLOW'&&e.kind!=='RED'))return;
+        const mp=db.matchPlayers.find(p=>p.id===e.primaryId);if(!mp)return;
+        const cp=db.clubPlayers.find(c2=>c2.id===mp.clubPlayerId);if(!cp)return;
+        counts[cp.userId]=counts[cp.userId]||{y:0,r:0};
+        if(e.kind==='YELLOW')counts[cp.userId].y++;else counts[cp.userId].r++;
+      });
+    });
+    const susp=new Set(Object.keys(counts).map(Number).filter(uid2=>counts[uid2].r>0||counts[uid2].y>=rule.yellowCardsToSuspend));
+    registerAuto(m5,HAN.id,p=>!susp.has(p.user.id));
+    registerAuto(m5,VIE.id,p=>!susp.has(p.user.id));
+    m5.status='ONGOING';
+  }
+
+  return db;
+}
+/* =====================================================================
+   TRUY VAN & QUY TAC NGHIEP VU (derived)
+   ===================================================================== */
+const ST_LBL={SCHEDULED:'Chưa diễn ra',ONGOING:'Đang diễn ra',FINISHED:'Đã kết thúc'};
+const EV_LBL={GOAL_NORMAL:'Bàn thắng',GOAL_PENALTY:'Bàn thắng phạt đền',GOAL_OWN:'Phản lưới nhà',
+  FOUL:'Phạm lỗi (không thẻ)',FOUL_YELLOW:'Phạm lỗi (thẻ vàng)',RED:'Thẻ đỏ',SUB:'Thay người'};
+const EV_STORE={GOAL_NORMAL:['GOAL','NORMAL'],GOAL_PENALTY:['GOAL','PENALTY'],GOAL_OWN:['GOAL','OWN'],
+  FOUL:['FOUL',null],FOUL_YELLOW:['FOUL',null],RED:['RED',null],SUB:['SUB',null]};
+
+const mcsOf=matchId=>DB.matchClubs.filter(x=>x.matchId===matchId);
+const mcOfRole=(matchId,role)=>DB.matchClubs.find(x=>x.matchId===matchId&&x.role===role);
+const clubOfMc=mc=>byId('clubs',mc.clubId);
+const roundOfMatch=m=>byId('rounds',m.roundId);
+const seasonOfMatch=m=>byId('seasons',roundOfMatch(m).seasonId);
+const seasonName=s=>byId('tournaments',s.tournamentId).name+' – '+s.year+'/'+(s.year+1);
+const ruleOfMatch=m=>byId('rules',seasonOfMatch(m).ruleId);
+function stadiumOfMatch(m){const h=mcOfRole(m.id,'HOME');return h?byId('stadiums',clubOfMc(h).stadiumId):null;}
+const lineupOf=mcId=>DB.matchPlayers.filter(p=>p.matchClubId===mcId);
+const cpOf=mp=>byId('clubPlayers',mp.clubPlayerId);
+const userOfMp=mp=>byId('users',cpOf(mp).userId);
+const mpLabel=mp=>{const u=userOfMp(mp),cp=cpOf(mp);return u.fullName+' ('+cp.shirtNumber+')';};
+function squadOfClub(clubId){
+  return DB.clubPlayers.filter(cp=>cp.clubId===clubId)
+    .map(cp=>({cp,user:byId('users',cp.userId)}))
+    .sort((a,b)=>a.cp.shirtNumber-b.cp.shirtNumber);
+}
+function eventsOf(matchId){
+  return DB.events.filter(e=>e.matchId===matchId)
+    .sort((a,b)=>(a.minute*60+(a.extraMinute||0))-(b.minute*60+(b.extraMinute||0))||a.id-b.id);
+}
+/* TI SO — derived: Goal NORMAL/PENALTY cong ben scorer, OWN cong ben kia */
+function scoreOf(mc){
+  let s=0;
+  DB.events.forEach(e=>{
+    if(e.matchId!==mc.matchId||e.kind!=='GOAL')return;
+    const p=byId('matchPlayers',e.primaryId);if(!p)return;
+    const side=DB.matchClubs.find(x=>x.id===p.matchClubId);if(!side)return;
+    if(e.goalType==='OWN'){if(side.id!==mc.id)s++;}
+    else if(side.id===mc.id)s++;
+  });
+  return s;
+}
+/* the phat trong mua TRUOC tran nay — de tinh treo gio (derived) */
+function cardsBefore(match,userId){
+  const season=seasonOfMatch(match);
+  let y=0,red=0;
+  DB.matches.forEach(m=>{
+    if(m.id===match.id)return;
+    const r=byId('rounds',m.roundId);
+    if(!r||r.seasonId!==season.id)return;
+    if(m.kickoffTime>=match.kickoffTime)return;
+    DB.events.forEach(e=>{
+      if(e.matchId!==m.id)return;
+      if(e.kind!=='YELLOW'&&e.kind!=='RED')return;
+      const mp=byId('matchPlayers',e.primaryId);if(!mp)return;
+      if(userOfMp(mp).id!==userId)return;
+      if(e.kind==='YELLOW')y++;else red++;
+    });
+  });
+  return {y,red};
+}
+function suspensionOf(match,userId){
+  const rule=ruleOfMatch(match);const c=cardsBefore(match,userId);
+  if(c.red>0)return{ok:false,why:'bị thẻ đỏ ở trận trước'};
+  if(c.y>=rule.yellowCardsToSuspend)return{ok:false,why:'tích lũy '+c.y+' thẻ vàng trong mùa (ngưỡng '+rule.yellowCardsToSuspend+')'};
+  return{ok:true};
+}
+/* trang thai cau thu trong tran */
+const redOf=(mid,mpId)=>DB.events.some(e=>e.matchId===mid&&e.kind==='RED'&&e.primaryId===mpId);
+const enteredAsIn=(mid,mpId)=>DB.events.some(e=>e.matchId===mid&&e.kind==='SUB'&&e.secondaryId===mpId);
+const wentOut=(mid,mpId)=>DB.events.some(e=>e.matchId===mid&&e.kind==='SUB'&&e.primaryId===mpId);
+function onPitch(mid,mp){
+  if(redOf(mid,mp.id))return false;
+  if(mp.role==='STARTING')return!wentOut(mid,mp.id);
+  return enteredAsIn(mid,mp.id)&&!wentOut(mid,mp.id);
+}
+function subsUsed(mid,mcId){
+  return DB.events.filter(e=>e.matchId===mid&&e.kind==='SUB').filter(e=>{
+    const mp=byId('matchPlayers',e.primaryId);return mp&&mp.matchClubId===mcId;}).length;
+}
+/* validateLineup — theo Rule cua mua */
+function validateLineup(match,selection){ /* selection: Map<cpId,'STARTING'|'SUBSTITUTE'> */
+  const rule=ruleOfMatch(match);const errs=[];
+  const chosen=[...selection.entries()].filter(x=>x[1]!=='NONE');
+  const start=chosen.filter(x=>x[1]==='STARTING');
+  const bench=chosen.filter(x=>x[1]==='SUBSTITUTE');
+  if(start.length!==rule.requiredMainPlayers)
+    errs.push('Đội hình chính phải đủ '+rule.requiredMainPlayers+' cầu thủ (hiện chọn '+start.length+').');
+  const gk=start.filter(([cpId])=>{const u=byId('users',byId('clubPlayers',cpId).userId);return POS_GROUP[u.position]==='GK';});
+  if(start.length===rule.requiredMainPlayers&&gk.length<1)
+    errs.push('Đội hình chính phải có ít nhất 1 thủ môn.');
+  if(bench.length>rule.maxBenchPlayers)
+    errs.push('Số cầu thủ dự bị vượt quá '+rule.maxBenchPlayers+' cầu thủ cho phép (hiện '+bench.length+').');
+  const fg=start.filter(([cpId])=>byId('users',byId('clubPlayers',cpId).userId).nationality!==VN);
+  if(fg.length>rule.maxForeignPlayers)
+    errs.push('Số lượng cầu thủ ngoại trên sân vượt quá giới hạn cho phép của giải đấu.');
+  chosen.forEach(([cpId])=>{
+    const u=byId('users',byId('clubPlayers',cpId).userId);
+    const s=suspensionOf(match,u.id);
+    if(!s.ok)errs.push(u.fullName+' đang bị treo giò — không được đăng kí.');
+  });
+  return errs;
+}
+function saveLineup(mcId,selection){
+  DB.matchPlayers=DB.matchPlayers.filter(p=>p.matchClubId!==mcId);
+  for(const[cpId,role]of selection)if(role!=='NONE')
+    DB.matchPlayers.push({id:nextId('matchPlayers'),matchClubId:mcId,clubPlayerId:cpId,role});
+}
+/* validateEvent — tra ve mang loi (rong = hop le) */
+function validateEvent(match,d){
+  const errs=[];const rule=ruleOfMatch(match);
+  if(match.status==='FINISHED')errs.push('Trận đấu đã kết thúc — không thể thêm sự kiện.');
+  const min=parseInt(d.minute,10),extra=parseInt(d.extra,10)||0;
+  if(!min||min<1||min>120)errs.push('Phút thi đấu phải từ 1 đến 120.');
+  if(extra<0||extra>15)errs.push('Phút bù giờ phải từ 0 đến 15.');
+  const mc=mcOfRole(match.id,d.clubRole);
+  if(!mc)errs.push('Vui lòng chọn CLB.');
+  const pr=d.primaryId?byId('matchPlayers',d.primaryId):null;
+  if(!pr)errs.push('Vui lòng chọn cầu thủ thực hiện.');
+  else{
+    if(pr.matchClubId!==mc.id)errs.push('Cầu thủ thực hiện không thuộc CLB đã chọn.');
+    if(redOf(match.id,pr.id))errs.push('Cầu thủ thực hiện đã bị thẻ đỏ trong trận này.');
+  }
+  const sec=d.secondaryId?byId('matchPlayers',d.secondaryId):null;
+  if(d.kind==='FOUL'||d.kind==='FOUL_YELLOW'){
+    if(!sec)errs.push('Phạm lỗi phải có cầu thủ liên quan (người bị phạm lỗi).');
+  }
+  if(d.kind==='SUB'){
+    if(!sec)errs.push('Thay người phải chọn cầu thủ vào sân (cầu thủ liên quan).');
+    else{
+      if(pr&&pr.matchClubId!==sec.matchClubId)errs.push('Cầu thủ vào và ra sân phải cùng CLB.');
+      if(sec.role!=='SUBSTITUTE')errs.push('Cầu thủ vào sân phải là cầu thủ dự bị.');
+      if(pr&&pr.id===sec.id)errs.push('Cầu thủ vào và ra sân phải là hai người khác nhau.');
+      if(enteredAsIn(match.id,sec.id))errs.push('Cầu thủ này đã vào sân trước đó (luật: mỗi cầu thủ chỉ vào sân 1 lần).');
+      if(redOf(match.id,sec.id))errs.push('Cầu thủ này đã bị thẻ đỏ trong trận.');
+    }
+    if(pr&&!errs.some(e=>e.includes('không thuộc CLB'))&&pr.matchClubId===mc.id){
+      if(!onPitch(match.id,pr))errs.push('Cầu thủ ra sân phải đang có mặt trên sân (đá chính hoặc đã vào thay người, chưa ra, chưa bị đuổi).');
+    }
+    if(mc&&subsUsed(match.id,mc.id)>=rule.maxSubstitutions)
+      errs.push('CLB đã dùng hết '+rule.maxSubstitutions+' lần thay người cho phép.');
+  }
+  if(d.kind==='GOAL_NORMAL'&&sec){
+    if(pr&&sec.matchClubId!==pr.matchClubId)errs.push('Người kiến tạo phải cùng CLB với người ghi bàn.');
+    if(pr&&pr.id===sec.id)errs.push('Người kiến tạo phải khác người ghi bàn.');
+    if(redOf(match.id,sec.id))errs.push('Người kiến tạo đã bị thẻ đỏ trong trận này.');
+  }
+  if((d.kind==='GOAL_PENALTY'||d.kind==='GOAL_OWN')&&sec)
+    errs.push('Bàn thắng phạt đền / phản lưới không có cầu thủ kiến tạo.');
+  if(sec&&d.kind!=='SUB'&&pr&&sec.id===pr.id)errs.push('Cầu thủ liên quan phải khác cầu thủ thực hiện.');
+  return errs;
+}
+function addEvent(match,d){
+  const[storeKind,goalType]=EV_STORE[d.kind];
+  const e={id:nextId('events'),matchId:match.id,kind:storeKind,minute:parseInt(d.minute,10),
+    extraMinute:parseInt(d.extra,10)||0,note:d.note||'',primaryId:d.primaryId,secondaryId:null,goalType};
+  if(d.kind!=='RED')e.secondaryId=d.secondaryId||null;
+  DB.events.push(e);
+  if(d.kind==='FOUL_YELLOW'){ /* Foul va YellowCard la 2 lop rieng -> 2 instance */
+    DB.events.push({...e,id:nextId('events'),kind:'YELLOW',secondaryId:null,goalType:null,pairId:e.id});
+  }
+}
+
+/* =====================================================================
+   ROUTER
+   ===================================================================== */
+const VIEWS={};
+const nav={stack:[]};
+function go(screen,params){nav.stack.push({screen,params:params||{}});render();window.scrollTo(0,0);}
+function startFlow(screen,params){nav.stack=[{screen:'home',params:{}},{screen,params:params||{}}];render();window.scrollTo(0,0);}
+function back(){if(nav.stack.length>1)nav.stack.pop();render();}
+function jumpTo(i){nav.stack=nav.stack.slice(0,i+1);render();}
+function cur(){return nav.stack[nav.stack.length-1];}
+
+function msgHTML(){
+  if(!PENDING_MSG)return'';
+  const h='<div class="msg'+(PENDING_MSG.isErr?' error':'')+'">'+esc(PENDING_MSG.msg)+'</div>';
+  PENDING_MSG=null;
+  return h;
+}
+function tbl(heads,rows,clickable,extra){
+  if(!rows.length)return'<p class="muted">Không có dữ liệu phù hợp.</p>';
+  return '<div class="tblwrap '+(extra||'')+'"><table><thead><tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'
+    +rows.map(r=>'<tr class="'+(clickable?'clickable':'')+'" data-id="'+r.id+'">'
+      +r.cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')
+    +'</tbody></table></div>';
+}
+function bindRows(sel,fn){$$(sel+' tr.clickable').forEach(tr=>tr.onclick=()=>fn(parseInt(tr.dataset.id,10)));}
+function backLink(){return '<p><a class="breadcrumb" data-back>&laquo; Quay lại</a></p>';}
+function bindBack(){const b=$('[data-back]');if(b)b.onclick=back;}
+
+function render(){
+  if(DB.session&&!DB.users.some(u=>u.id===DB.session&&u.type==='staff'))DB.session=null;
+  if(!DB.session&&cur().screen!=='login')nav.stack=[{screen:'login',params:{}}];
+  const c=cur();const v=VIEWS[c.screen]||VIEWS.login;
+  const tb=$('#topbar');
+  if(c.screen!=='login'){
+    const staff=byId('users',DB.session);
+    const crumbs=nav.stack.map((s,i)=>{
+      const vv=VIEWS[s.screen];if(!vv)return'';
+      const lb=vv.crumb?vv.crumb(s.params):'…';
+      return i===nav.stack.length-1?esc(lb):'<a data-jump="'+i+'">'+esc(lb)+'</a> &rsaquo; ';
+    }).join('');
+    tb.innerHTML='<div class="top"><div class="top-in"><div class="right"><a data-logout>Đăng xuất</a></div>'
+      +'<h1>Hệ thống quản lí giải bóng đá vô địch quốc gia</h1>'
+      +'<div class="user">'+esc(staff.fullName)+' — '+esc(staff.position)+'</div>'
+      +'<div class="breadcrumb">'+crumbs+'</div></div></div>';
+  }else tb.innerHTML='';
+  const inner=msgHTML()+v.html(c.params);
+  const open=c.screen==='login'?'<div class="login-center">':'';
+  const close=c.screen==='login'?'</div>':'';
+  const foot=v.foot?'<footer>'+v.foot(c.params)+'</footer>':'';
+  $('#app').innerHTML=open+inner+close+foot;
+  if(c.screen!=='login'){
+    const lo=$('[data-logout]');if(lo)lo.onclick=()=>{DB.session=null;saveDB();nav.stack=[{screen:'login',params:{}}];render();};
+    $$('[data-jump]').forEach(el=>el.onclick=()=>jumpTo(parseInt(el.dataset.jump,10)));
+  }
+  if(v.after)v.after(c.params);
+}
+/* =====================================================================
+   DANG NHAP (LoginView — User.checkLogin)
+   ===================================================================== */
+VIEWS.login={
+  crumb:()=>'Đăng nhập',
+  html(){return `
+  <h2 style="text-align:center">Đăng nhập</h2>
+  <p class="small muted" style="text-align:center;margin:0 0 14px">Hệ thống quản lí giải bóng đá vô địch quốc gia</p>
+  <form id="login-form">
+    <div id="lerr" class="msg error" style="display:none"></div>
+    <label>Tên người dùng</label>
+    <input id="luser" autocomplete="username">
+    <label>Mật khẩu</label>
+    <input id="lpass" type="password" autocomplete="current-password">
+    <div class="form-actions"><button class="primary" type="submit" style="width:100%">Đăng nhập</button></div>
+  </form>`;},
+  foot(){return 'Tài khoản mẫu (nhân viên BTC): anlv / anlv@123';},
+  after(){
+    $('#login-form').onsubmit=e=>{
+      e.preventDefault();
+      const u=$('#luser').value.trim(),p=$('#lpass').value;
+      const st=DB.users.find(x=>x.type==='staff'&&x.username===u&&x.password===p);
+      if(!st){const el=$('#lerr');el.style.display='block';el.textContent='Sai tên người dùng hoặc mật khẩu!';return;}
+      DB.session=st.id;saveDB();
+      nav.stack=[{screen:'home',params:{}}];render();
+    };
+  }
+};
+
+/* =====================================================================
+   TRANG CHU (StaffHomeView — Staff.getStaffInfo)
+   ===================================================================== */
+VIEWS.home={
+  crumb:()=>'Trang chủ',
+  html(){
+    const st=byId('users',DB.session);
+    return `
+  <h2>Giao diện chính của nhân viên Ban tổ chức</h2>
+  <table class="kv" style="max-width:420px">
+    <tr><th style="width:130px">Họ tên</th><td>${esc(st.fullName)}</td></tr>
+    <tr><th>Chức vụ</th><td>${esc(st.position)}</td></tr>
+  </table>
+  <div class="btnrow">
+    <button class="primary" id="f1">Quản lý thông tin cầu thủ</button>
+    <button class="primary" id="f2">Đăng ký cầu thủ thi đấu cho trận đấu</button>
+    <button class="primary" id="f3">Cập nhật kết quả thi đấu</button>
+  </div>`;
+  },
+  foot(){return '<a data-reset>Khôi phục dữ liệu mẫu</a> — xóa toàn bộ thao tác đã làm, trở về dữ liệu ban đầu · Tiến độ được lưu tự động trong localStorage';},
+  after(){
+    $('#f1').onclick=()=>{window.__psKey=undefined;startFlow('psearch');};
+    $('#f2').onclick=()=>startFlow('uc2-season');
+    $('#f3').onclick=()=>startFlow('uc3-season');
+    const rs=$('[data-reset]');
+    if(rs)rs.onclick=()=>{
+      if(!confirm('Khôi phục dữ liệu mẫu? Toàn bộ dữ liệu đã thao tác sẽ bị xóa.'))return;
+      const sid=DB.session;
+      DB=makeSeed();DB.session=sid;saveDB();
+      flash('Đã khôi phục dữ liệu mẫu.');render();
+    };
+  }
+};
+
+/* =====================================================================
+   UC1 — QUAN LY THONG TIN CAU THU
+   ===================================================================== */
+VIEWS.psearch={
+  crumb:()=>'Tìm cầu thủ',
+  html(){return backLink()+`
+  <h2>Tìm cầu thủ</h2>
+  <div class="searchrow">
+    <input id="skey" placeholder="Nhập tên hoặc mã cầu thủ…">
+    <button class="primary" id="sbtn">Tìm</button>
+    <button id="addnew">Thêm cầu thủ mới</button>
+  </div>
+  <div id="sres"></div>`;},
+  after(){
+    const doSearch=()=>{
+      const key=norm($('#skey').value.trim());
+      window.__psKey=key;
+      let list=DB.users.filter(u=>u.type==='player');
+      if(key)list=list.filter(u=>norm(u.fullName).includes(key)||norm(u.code).includes(key));
+      list=list.slice(0,60);
+      const rows=list.map(u=>({id:u.id,cells:[
+        '<b>'+esc(u.code)+'</b>',esc(u.fullName),fmtD(u.dob),esc(u.nationality),esc(u.phone),
+        '<button class="mini" data-edit="'+u.id+'">Sửa</button> <button class="mini danger" data-delp="'+u.id+'">Xoá</button>'
+      ]}));
+      $('#sres').innerHTML=rows.length
+        ?tbl(['Mã CT','Họ và tên','Ngày sinh','Quốc tịch','SĐT','Thao tác'],rows,false,'scroll')
+        :'<p class="muted">Không tìm thấy cầu thủ phù hợp.</p>';
+      $$('#sres [data-edit]').forEach(b=>b.onclick=()=>go('pform',{uid:parseInt(b.dataset.edit,10)}));
+      $$('#sres [data-delp]').forEach(b=>b.onclick=()=>{
+        const uid=parseInt(b.dataset.delp,10);
+        const u=byId('users',uid);
+        if(!confirm('Xoá cầu thủ '+u.fullName+' ('+u.code+') khỏi hệ thống?'))return;
+        const cps=DB.clubPlayers.filter(c2=>c2.userId===uid).map(c2=>c2.id);
+        const mps=DB.matchPlayers.filter(p=>cps.includes(p.clubPlayerId)).map(p=>p.id);
+        const ref=DB.events.some(e=>(e.primaryId&&mps.includes(e.primaryId))||(e.secondaryId&&mps.includes(e.secondaryId)));
+        if(ref){flash('Cầu thủ đã phát sinh sự kiện trong giải — không thể xóa.',true);render();return;}
+        DB.users=DB.users.filter(x=>x.id!==uid);
+        DB.clubPlayers=DB.clubPlayers.filter(c2=>c2.userId!==uid);
+        DB.matchPlayers=DB.matchPlayers.filter(p=>!mps.includes(p.id));
+        saveDB();flash('Đã xóa cầu thủ '+u.fullName+'.');render();
+      });
+    };
+    $('#sbtn').onclick=doSearch;
+    $('#skey').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doSearch();}};
+    $('#addnew').onclick=()=>go('pform',{});
+    bindBack();
+    if(window.__psKey!==undefined){$('#skey').value=window.__psKey;doSearch();}
+  }
+};
+VIEWS.pform={
+  crumb:p=>p.uid?'Sửa thông tin cầu thủ':'Thêm cầu thủ mới',
+  html(p){
+    const u=p.uid?byId('users',p.uid):null;
+    const nats=[VN,'Brasil','Nigeria','Bờ Biển Ngà','Angola','Serbia','Thái Lan','Hàn Quốc','Nhật Bản','Úc'];
+    return backLink()+`
+  <h2>${u?'Sửa thông tin cầu thủ — '+esc(u.code):'Thêm cầu thủ mới'}</h2>
+  <div id="ferr" class="msg error" style="display:none"></div>
+  <form id="pform" novalidate>
+    <div class="form-grid">
+      <div><label>Họ tên (*)</label><input id="f-fullName" placeholder="vd: Nguyễn Quang Hải" value="${u?esc(u.fullName):''}"></div>
+      <div><label>Ngày sinh (*)</label><input id="f-dob" type="date" value="${u?esc(u.dob):''}"></div>
+      <div><label>Quốc tịch (*)</label><input id="f-nationality" list="nats" placeholder="Việt Nam" value="${u?esc(u.nationality):''}">
+        <datalist id="nats">${nats.map(n=>'<option value="'+esc(n)+'">').join('')}</datalist></div>
+      <div><label>Vị trí sở trường (*)</label>
+        <select id="f-position"><option value="">— Chọn vị trí —</option>${Object.values(POS).map(x=>'<option '+(u&&u.position===x?'selected':'')+'>'+esc(x)+'</option>').join('')}</select></div>
+      <div><label>Email (*)</label><input id="f-email" placeholder="vd: nqh@gmail.com" value="${u?esc(u.email):''}"></div>
+      <div><label>SĐT (*)</label><input id="f-phone" placeholder="vd: 0987654321" value="${u?esc(u.phone):''}"></div>
+      <div><label>Chiều cao — cm (*)</label><input id="f-height" type="number" min="100" max="230" placeholder="168" value="${u?esc(u.height):''}"></div>
+      <div><label>Cân nặng — kg (*)</label><input id="f-weight" type="number" min="30" max="150" placeholder="58" value="${u?esc(u.weight):''}"></div>
+    </div>
+    <div class="form-actions"><button class="primary" type="submit">${u?'Cập nhật thông tin cầu thủ':'Lưu thông tin cầu thủ'}</button></div>
+  </form>`;},
+  foot(p){return p.uid?'':'Sau khi lưu, hệ thống tự sinh mã cầu thủ (CTxxx) và tự tạo tài khoản: username = mã cầu thủ, password = số điện thoại.';},
+  after(p){
+    bindBack();
+    const editU=p.uid?byId('users',p.uid):null;
+    $('#pform').onsubmit=e=>{
+      e.preventDefault();
+      const v={
+        fullName:$('#f-fullName').value.trim(),dob:$('#f-dob').value,
+        nationality:$('#f-nationality').value.trim(),position:$('#f-position').value,
+        email:$('#f-email').value.trim(),phone:$('#f-phone').value.trim(),
+        height:$('#f-height').value,weight:$('#f-weight').value};
+      const errs=[];
+      if(v.fullName.length<3)errs.push('Nhập họ tên (tối thiểu 3 kí tự).');
+      if(!v.dob)errs.push('Chọn ngày sinh.');
+      else{const a=ageOf(v.dob);if(a==null||a<14||a>45)errs.push('Tuổi cầu thủ phải từ 14 đến 45.');}
+      if(!v.nationality)errs.push('Nhập quốc tịch.');
+      if(!v.position)errs.push('Chọn vị trí sở trường.');
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email))errs.push('Email không hợp lệ.');
+      else if(DB.users.some(u=>u.email&&u.email.toLowerCase()===v.email.toLowerCase()&&(!editU||u.id!==editU.id)))errs.push('Email đã tồn tại trong hệ thống.');
+      if(!/^[0-9]{9,11}$/.test(v.phone))errs.push('SĐT gồm 9–11 chữ số.');
+      else if(DB.users.some(u=>u.phone===v.phone&&(!editU||u.id!==editU.id)))errs.push('Số điện thoại đã tồn tại trong hệ thống, vui lòng kiểm tra lại.');
+      if(!v.height||+v.height<140||+v.height>220)errs.push('Chiều cao 140–220 cm.');
+      if(!v.weight||+v.weight<40||+v.weight>130)errs.push('Cân nặng 40–130 kg.');
+      const ferr=$('#ferr');
+      if(errs.length){
+        ferr.style.display='block';
+        ferr.innerHTML='Dữ liệu chưa hợp lệ:<br>'+errs.map(x=>'— '+esc(x)).join('<br>');
+        return;
+      }
+      if(editU){
+        Object.assign(editU,{fullName:v.fullName,dob:v.dob,nationality:v.nationality,
+          position:v.position,email:v.email,phone:v.phone,password:v.phone,height:+v.height,weight:+v.weight});
+        saveDB();
+        flash('Cập nhật thông tin cầu thủ thành công!');
+        nav.stack.pop();render();
+        return;
+      }
+      /* luu — sinh ma cau thu moi = max(ma hien co) + 1 */
+      let mx=0;DB.users.forEach(u=>{if(u.code){const n=parseInt(u.code.slice(2),10);if(n>mx)mx=n;}});
+      const code='CT'+pad(mx+1);
+      DB.users.push({id:nextId('users'),type:'player',code,username:code,password:v.phone,
+        fullName:v.fullName,dob:v.dob,email:v.email,phone:v.phone,nationality:v.nationality,
+        position:v.position,height:+v.height,weight:+v.weight});
+      saveDB();
+      flash('Thêm cầu thủ vào hệ thống thành công! Mã cầu thủ: '+code+' — Tài khoản: '+code+' / Mật khẩu: '+v.phone+' (ghi lại cung cấp cho cầu thủ, nhắc đổi mật khẩu ở lần đăng nhập đầu tiên).');
+      nav.stack.pop();render();
+    };
+  }
+};
+/* =====================================================================
+   TIM GIAI / VONG / TRAN — dung chung cho UC2 va UC3
+   ===================================================================== */
+function seasonRows(key){
+  let list=[...DB.seasons].sort((a,b)=>b.year-a.year);
+  if(key)list=list.filter(s=>norm(seasonName(s)).includes(key)||norm(s.code).includes(key)||String(s.year).includes(key));
+  return list.map(s=>({id:s.id,cells:['<b>'+esc(s.code)+'</b>',esc(seasonName(s)),esc(s.status)]}));
+}
+function roundRows(seasonId,key){
+  let list=DB.rounds.filter(r=>r.seasonId===seasonId);
+  if(key)list=list.filter(r=>norm(r.name).includes(key)||norm(r.code).includes(key));
+  return list.map(r=>({id:r.id,cells:['<b>'+esc(r.code)+'</b>',esc(r.name),fmtDshort(r.startTime),fmtDshort(r.endTime),
+    esc(r.status)]}));
+}
+function makeSearchFlow(prefix,nextScreen){
+  VIEWS[prefix+'-season']={
+    crumb:()=>'Tìm giải đấu',
+    html(){return backLink()+`
+  <h2>Tìm giải đấu</h2>
+  <div class="searchrow"><input id="skey" placeholder="Nhập tên hoặc mã giải đấu…"><button class="primary" id="sbtn">Tìm</button></div>
+  <div id="sres"></div>`;},
+    after(){
+      const doSearch=()=>{
+        const rows=seasonRows(norm($('#skey').value.trim()));
+        $('#sres').innerHTML=rows.length
+          ?tbl(['Mã giải đấu','Tên giải đấu','Trạng thái'],rows,true,'scroll')
+          :'<p class="muted">Không tìm thấy giải đấu phù hợp.</p>';
+        bindRows('#sres',id=>go(prefix+'-round',{seasonId:id}));
+      };
+      $('#sbtn').onclick=doSearch;
+      $('#skey').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doSearch();}};
+      bindBack();
+    }
+  };
+  VIEWS[prefix+'-round']={
+    crumb:p=>{const s=byId('seasons',p.seasonId);return s?s.code:'';},
+    html(p){
+      const s=byId('seasons',p.seasonId);
+      return backLink()+`
+  <h2>Tìm vòng đấu — ${esc(seasonName(s))}</h2>
+  <div class="searchrow"><input id="skey" placeholder="Nhập tên hoặc mã vòng đấu…"><button class="primary" id="sbtn">Tìm</button></div>
+  <div id="sres"></div>`;},
+    after(p){
+      const doSearch=()=>{
+        const rows=roundRows(p.seasonId,norm($('#skey').value.trim()));
+        $('#sres').innerHTML=rows.length
+          ?tbl(['Mã vòng đấu','Tên vòng đấu','Thời gian bắt đầu','Thời gian kết thúc','Trạng thái'],rows,true,'scroll')
+          :'<p class="muted">Không có vòng đấu phù hợp.</p>';
+        bindRows('#sres',id=>go(prefix+'-match',{roundId:id}));
+      };
+      $('#sbtn').onclick=doSearch;
+      $('#skey').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doSearch();}};
+      bindBack();doSearch();
+    }
+  };
+  VIEWS[prefix+'-match']={
+    crumb:p=>{const r=byId('rounds',p.roundId);return r?r.name:'';},
+    html(p){
+      const r=byId('rounds',p.roundId);
+      return backLink()+`
+  <h2>Tìm trận đấu — ${esc(r.name)}</h2>
+  <div class="searchrow"><input id="skey" placeholder="Nhập tên CLB hoặc mã trận đấu…"><button class="primary" id="sbtn">Tìm</button></div>
+  <div id="sres"></div>`;},
+    after(p){
+      const doSearch=()=>{
+        const key=norm($('#skey').value.trim());
+        let list=DB.matches.filter(m=>m.roundId===p.roundId);
+        if(key)list=list.filter(m=>{
+          const h=clubOfMc(mcOfRole(m.id,'HOME')),a=clubOfMc(mcOfRole(m.id,'AWAY'));
+          return norm(m.code).includes(key)||norm(h.shortName).includes(key)||norm(a.shortName).includes(key);});
+        const rows=list.map(m=>{
+          const h=clubOfMc(mcOfRole(m.id,'HOME')),a=clubOfMc(mcOfRole(m.id,'AWAY'));
+          const cells=['<b>'+esc(m.code)+'</b>',esc(h.shortName),esc(a.shortName),
+            fmtDshort(m.kickoffTime),fmtTime(m.kickoffTime)];
+          if(prefix==='uc2'){
+            const done=mcsOf(m.id).every(mc=>lineupOf(mc.id).length>0);
+            cells.push(done?'Đã đủ đội hình':'<span class="err">Chưa đủ đội hình</span>');
+          }else{
+            cells.push('<b>'+scoreOf(mcOfRole(m.id,'HOME'))+' – '+scoreOf(mcOfRole(m.id,'AWAY'))+'</b>');
+            cells.push(ST_LBL[m.status]);
+          }
+          return{id:m.id,cells};
+        });
+        const heads=prefix==='uc2'
+          ?['Mã trận đấu','Đội nhà','Đội khách','Ngày thi đấu','Giờ thi đấu','Trạng thái đăng kí']
+          :['Mã trận đấu','Đội nhà','Đội khách','Ngày thi đấu','Giờ thi đấu','Tỉ số','Trạng thái'];
+        $('#sres').innerHTML=rows.length?tbl(heads,rows,true,'scroll'):'<p class="muted">Không có trận đấu phù hợp.</p>';
+        bindRows('#sres',id=>go(nextScreen,{matchId:id}));
+      };
+      $('#sbtn').onclick=doSearch;
+      $('#skey').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doSearch();}};
+      bindBack();doSearch();
+    }
+  };
+}
+
+/* =====================================================================
+   UC2 — THONG TIN TRAN DAU & DANG KY DOI HINH
+   ===================================================================== */
+function lineupPanel(m,role){
+  const mc=mcOfRole(m.id,role);
+  const club=clubOfMc(mc);
+  const lps=lineupOf(mc.id);
+  const rows=lps.map(mp=>{
+    const u=userOfMp(mp),cp=cpOf(mp);
+    return{id:mp.id,cells:[esc(u.code),esc(u.fullName),cp.shirtNumber,esc(u.position),
+      (mp.role==='STARTING'?'Đá chính':'Dự bị')+(redOf(m.id,mp.id)?' — <span class="err">bị đuổi</span>':'')]};
+  }).sort((a,b)=>(a.cells[4].startsWith('Đá chính')?0:1)-(b.cells[4].startsWith('Đá chính')?0:1));
+  const locked=m.status==='FINISHED';
+  return `<div class="panel">
+    <h3>${esc(club.shortName)} — đội ${role==='HOME'?'nhà':'khách'}</h3>
+    <div class="small muted">Đã đăng kí: ${lps.length} cầu thủ</div>
+    ${lps.length?tbl(['Mã cầu thủ','Họ tên','Số áo','Vị trí','Vai trò'],rows,false):'<p class="muted small" style="margin-top:8px">Chưa đăng kí đội hình.</p>'}
+    ${locked?'<p class="muted small">Trận đã kết thúc — đội hình bị khóa.</p>'
+      :`<div class="panel-actions"><button data-reg="${role}">${lps.length?'Chỉnh sửa đội hình':'Đăng ký đội hình'}</button></div>`}
+  </div>`;
+}
+VIEWS['uc2-info']={
+  crumb:p=>{const m=byId('matches',p.matchId);return m?m.code:'';},
+  html(p){
+    const m=byId('matches',p.matchId);
+    const st=stadiumOfMatch(m);
+    const h=clubOfMc(mcOfRole(m.id,'HOME')),a=clubOfMc(mcOfRole(m.id,'AWAY'));
+    const regH=lineupOf(mcOfRole(m.id,'HOME').id).length>0;
+    const regA=lineupOf(mcOfRole(m.id,'AWAY').id).length>0;
+    return backLink()+`
+  <h2>Thông tin trận đấu — ${esc(m.code)}</h2>
+  <table class="kv">
+    <tr><th>Thời gian thi đấu</th><td>${fmtDT(m.kickoffTime)}</td></tr>
+    <tr><th>Sân vận động</th><td>${st?esc(st.name)+' — '+esc(st.address):'—'}</td></tr>
+    <tr><th>Trạng thái đăng kí</th><td>${esc(h.shortName)}: ${regH?'<b>Đã đăng kí</b>':'Chưa đăng kí'} &nbsp;·&nbsp; ${esc(a.shortName)}: ${regA?'<b>Đã đăng kí</b>':'Chưa đăng kí'}</td></tr>
+  </table>
+  <div class="cols2">${lineupPanel(m,'HOME')}${lineupPanel(m,'AWAY')}</div>`;
+  },
+  after(p){
+    bindBack();
+    $$('[data-reg]').forEach(b=>b.onclick=()=>{
+      const m=byId('matches',p.matchId);
+      if(m.status==='FINISHED'){flash('Trận đã kết thúc — không thể đăng kí đội hình.',true);render();return;}
+      go('uc2-lineup',{matchId:p.matchId,role:b.dataset.reg});
+    });
+  }
+};
+VIEWS['uc2-lineup']={
+  crumb:p=>{const m=byId('matches',p.matchId);return 'Đăng kí đội hình — '+(m?m.code:'');},
+  html(p){
+    const m=byId('matches',p.matchId);
+    const mc=mcOfRole(m.id,p.role);
+    const club=clubOfMc(mc);
+    const squad=squadOfClub(club.id);
+    const existing=new Map(lineupOf(mc.id).map(mp=>[mp.clubPlayerId,mp.role]));
+    const rows=squad.map(sq=>{
+      const susp=suspensionOf(m,sq.user.id);
+      const cur=existing.get(sq.cp.id)||'NONE';
+      const box=(val,lbl)=>{
+        if(!susp.ok)return '';
+        return '<button type="button" class="rolebox'+(cur===val?' on':'')+'" data-cp="'+sq.cp.id+'" data-v="'+val+'">'+lbl+'</button>';
+      };
+      return{id:sq.cp.id,cells:['<b>'+esc(sq.user.code)+'</b>',esc(sq.user.fullName),sq.cp.shirtNumber,
+        esc(sq.user.position),esc(sq.user.nationality),
+        susp.ok?'Khả dụng':'<span class="err">Treo giò</span>',
+        '<div class="roles">'+box('STARTING','Đá chính')+box('SUBSTITUTE','Dự bị')+box('NONE','Không')+'</div>']};
+    });
+    return backLink()+`
+  <h2>Đăng ký danh sách thi đấu — ${esc(club.shortName)}</h2>
+  <div id="counts" class="msg"></div>
+  <div id="lerr" class="msg error" style="display:none"></div>
+  ${tbl(['Mã cầu thủ','Họ tên','Số áo','Vị trí','Quốc tịch','Trạng thái','Chọn vai trò'],rows,false,'tall')}
+  <div class="form-actions"><button class="primary" id="save-lineup">Lưu danh sách đăng ký</button></div>`;
+  },
+  foot(p){
+    const m=byId('matches',p.matchId);
+    const rule=ruleOfMatch(m);
+    return 'Điều lệ giải: đủ '+rule.requiredMainPlayers+' cầu thủ đá chính (có thủ môn) · tối đa '+rule.maxBenchPlayers+' dự bị · tối đa '+rule.maxForeignPlayers+' cầu thủ ngoại trên sân · treo giò khi tích lũy '+rule.yellowCardsToSuspend+' thẻ vàng trong mùa.';
+  },
+  after(p){
+    bindBack();
+    const m=byId('matches',p.matchId);
+    const mc=mcOfRole(m.id,p.role);
+    const club=clubOfMc(mc);
+    const rule=ruleOfMatch(m);
+    const squad=squadOfClub(club.id);
+    function readSel(){
+      const sel=new Map();
+      squad.forEach(sq=>sel.set(sq.cp.id,'NONE'));
+      $$('.rolebox.on').forEach(b=>sel.set(parseInt(b.dataset.cp,10),b.dataset.v));
+      return sel;
+    }
+    function updateCounts(){
+      const sel=readSel();
+      let st=0,be=0,gk=0,fg=0;
+      squad.forEach(sq=>{
+        const v=sel.get(sq.cp.id);
+        if(v==='STARTING'){st++;if(POS_GROUP[sq.user.position]==='GK')gk++;if(sq.user.nationality!==VN)fg++;}
+        if(v==='SUBSTITUTE')be++;
+      });
+      $('#counts').innerHTML='Đã chọn — Đá chính: <b>'+st+'/'+rule.requiredMainPlayers+'</b>'
+        +' · Thủ môn trên sân: <b>'+gk+'/≥1</b>'
+        +' · Dự bị: <b>'+be+'/'+rule.maxBenchPlayers+'</b>'
+        +' · Cầu thủ ngoại trên sân: <b>'+fg+'/'+rule.maxForeignPlayers+'</b>';
+    }
+    $$('.rolebox').forEach(b=>b.onclick=()=>{
+      const cp=b.dataset.cp;
+      $$('.rolebox[data-cp="'+cp+'"]').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      updateCounts();
+    });
+    updateCounts();
+    $('#save-lineup').onclick=()=>{
+      const errs=validateLineup(m,readSel());
+      const le=$('#lerr');
+      if(errs.length){
+        le.style.display='block';
+        le.innerHTML='Danh sách đăng kí chưa hợp lệ theo điều lệ giải:<br>'+errs.map(x=>'— '+esc(x)).join('<br>');
+        return;
+      }
+      saveLineup(mc.id,readSel());saveDB();
+      flash('Lưu danh sách đăng ký thi đấu thành công!');
+      back();
+    };
+  }
+};
+/* =====================================================================
+   UC3 — CHI TIET DIEN BIEN TRAN DAU & THEM SU KIEN
+   ===================================================================== */
+function minLabel(e){return e.minute+(e.extraMinute?'+'+e.extraMinute:'')+"'";}
+function eventRows(m){
+  const evs=eventsOf(m.id);
+  const paired=new Set(evs.filter(e=>e.kind==='YELLOW'&&e.pairId).map(e=>e.pairId));
+  return evs.filter(e=>!(e.kind==='YELLOW'&&e.pairId)).map(e=>{
+    const pr=e.primaryId?byId('matchPlayers',e.primaryId):null;
+    const sec=e.secondaryId?byId('matchPlayers',e.secondaryId):null;
+    const side=pr?DB.matchClubs.find(x=>x.id===pr.matchClubId):null;
+    const clubShort=side?clubOfMc(side).shortName:'';
+    let lbl;
+    if(e.kind==='GOAL')lbl=EV_LBL['GOAL_'+e.goalType]||'Bàn thắng';
+    else if(e.kind==='FOUL')lbl=paired.has(e.id)?EV_LBL.FOUL_YELLOW:EV_LBL.FOUL;
+    else if(e.kind==='YELLOW')lbl='Thẻ vàng';
+    else if(e.kind==='RED')lbl='Thẻ đỏ';
+    else lbl='Thay người';
+    return{id:e.id,cells:['<b>'+minLabel(e)+'</b>',esc(clubShort),esc(lbl),
+      esc(pr?mpLabel(pr):'—'),esc(sec?mpLabel(sec):'—'),
+      e.note?esc(e.note):'—',
+      m.status==='FINISHED'?'—':'<button class="ev-del" data-del="'+e.id+'">Xoá</button>']};
+  });
+}
+VIEWS['uc3-events']={
+  crumb:p=>{const m=byId('matches',p.matchId);return 'Diễn biến — '+(m?m.code:'');},
+  html(p){
+    const m=byId('matches',p.matchId);
+    const h=clubOfMc(mcOfRole(m.id,'HOME')),a=clubOfMc(mcOfRole(m.id,'AWAY'));
+    const sh=scoreOf(mcOfRole(m.id,'HOME')),sa=scoreOf(mcOfRole(m.id,'AWAY'));
+    const evs=eventsOf(m.id);
+    const last=evs.length?evs[evs.length-1]:null;
+    const mx=DB.events.filter(e=>e.matchId===m.id).reduce((mx2,e)=>Math.max(mx2,e.extraMinute||0),0);
+    const bothLineup=mcsOf(m.id).every(mc=>lineupOf(mc.id).length>0);
+    return backLink()+`
+  <h2>Chi tiết diễn biến trận đấu — ${esc(m.code)}</h2>
+  <table class="kv">
+    <tr><th>Thời gian thi đấu</th><td>${fmtDT(m.kickoffTime)}</td></tr>
+    <tr><th>Phút (sự kiện mới nhất)</th><td>${last?minLabel(last):'—'}</td></tr>
+    <tr><th>Phút bù giờ hiện tại</th><td>${mx?'+'+mx+"'":'—'}</td></tr>
+    <tr><th>Trạng thái</th><td>${ST_LBL[m.status]}</td></tr>
+  </table>
+  <div class="score">${esc(h.shortName)} <span class="num">${sh}</span> — <span class="num">${sa}</span> ${esc(a.shortName)}<br><span class="small muted">Tỉ số trực tiếp</span></div>
+  ${bothLineup?'':'<div class="msg error">Trận này chưa đủ đội hình đăng kí — hãy đăng kí qua chức năng "Đăng ký cầu thủ thi đấu cho trận đấu" trước khi thêm sự kiện.</div>'}
+  <div class="btnrow">
+    <button class="primary" id="add-ev" ${m.status==='FINISHED'?'disabled':''}>Thêm sự kiện mới</button>
+    ${m.status!=='FINISHED'?'<button class="danger" id="end-m">Kết thúc trận đấu</button>':''}
+  </div>
+  ${eventsOf(m.id).length
+    ?tbl(['Phút','Tên CLB','Loại','Cầu thủ thực hiện','Cầu thủ liên quan','Ghi chú','Thao tác'],eventRows(m),false)
+    :'<p class="muted">Trận đấu vừa bắt đầu — chưa có sự kiện nào.</p>'}`;
+  },
+  foot(){return 'Tỉ số được tính tự động từ sự kiện (phản lưới nhà cộng cho bên kia — xoá sự kiện tỉ số tự trừ lại). "Phạm lỗi (thẻ vàng)" lưu thành 2 sự kiện riêng (Foul + YellowCard) đúng mô hình lớp.';},
+  after(p){
+    bindBack();
+    const m=byId('matches',p.matchId);
+    const add=$('#add-ev');if(add&&!add.disabled)add.onclick=()=>go('uc3-form',{matchId:p.matchId});
+    const end=$('#end-m');
+    if(end)end.onclick=()=>{
+      const h=clubOfMc(mcOfRole(m.id,'HOME')),a=clubOfMc(mcOfRole(m.id,'AWAY'));
+      const sh=scoreOf(mcOfRole(m.id,'HOME')),sa=scoreOf(mcOfRole(m.id,'AWAY'));
+      if(!confirm('Xác nhận kết thúc trận đấu và chốt tỉ số chung cuộc: '+h.shortName+' ['+sh+'] - ['+sa+'] '+a.shortName+'?'))return;
+      m.status='FINISHED';
+      const r=roundOfMatch(m);
+      if(DB.matches.filter(x=>x.roundId===r.id).every(x=>x.status==='FINISHED'))r.status='Đã kết thúc';
+      saveDB();
+      flash('Cập nhật kết quả trận đấu thành công!');
+      render();
+    };
+    $$('[data-del]').forEach(b=>b.onclick=()=>{
+      if(!confirm('Xoá sự kiện này? Tỉ số sẽ được tính lại.'))return;
+      const id=parseInt(b.dataset.del,10);
+      DB.events=DB.events.filter(e=>e.id!==id&&e.pairId!==id);
+      saveDB();flash('Đã xóa sự kiện — tỉ số được tính lại.');render();
+    });
+  }
+};
+VIEWS['uc3-form']={
+  crumb:()=>'Thêm sự kiện mới',
+  html(p){
+    const m=byId('matches',p.matchId);
+    const h=clubOfMc(mcOfRole(m.id,'HOME')),a=clubOfMc(mcOfRole(m.id,'AWAY'));
+    return backLink()+`
+  <h2>Thêm sự kiện mới — ${esc(m.code)}</h2>
+  <div id="ferr" class="msg error" style="display:none"></div>
+  <form id="evform" novalidate>
+    <div class="form-grid">
+      <div><label>CLB</label>
+        <select id="e-club"><option value="HOME">${esc(h.shortName)} — đội nhà</option><option value="AWAY">${esc(a.shortName)} — đội khách</option></select></div>
+      <div><label>Loại sự kiện</label>
+        <select id="e-kind">
+          <option value="GOAL_NORMAL">Bàn thắng</option>
+          <option value="GOAL_PENALTY">Bàn thắng phạt đền</option>
+          <option value="GOAL_OWN">Phản lưới nhà</option>
+          <option value="FOUL">Phạm lỗi (không thẻ)</option>
+          <option value="FOUL_YELLOW">Phạm lỗi (thẻ vàng)</option>
+          <option value="RED">Thẻ đỏ</option>
+          <option value="SUB">Thay người</option>
+        </select></div>
+      <div><label>Phút thi đấu</label><input id="e-min" type="number" min="1" max="120" placeholder="vd: 45"></div>
+      <div><label>Phút bù giờ</label><input id="e-extra" type="number" min="0" max="15" value="0"></div>
+    </div>
+    <label>Cầu thủ thực hiện</label><select id="e-p1"></select><div class="field-note" id="p1-note"></div>
+    <div id="sec-field"><label>Cầu thủ liên quan <span class="muted small" id="sec-lbl"></span></label>
+      <select id="e-p2"></select><div class="field-note" id="sec-note"></div></div>
+    <label>Ghi chú</label><input id="e-note" placeholder="vd: Lỗi kê chân trong vòng cấm">
+    <div class="form-actions"><button class="primary" type="submit">Lưu thông tin sự kiện</button></div>
+  </form>`;},
+  after(p){
+    bindBack();
+    const m=byId('matches',p.matchId);
+    const kindMeta=k=>{
+      if(k==='FOUL'||k==='FOUL_YELLOW')return{sec:'BẮT BUỘC — người bị phạm lỗi',same:false};
+      if(k==='SUB')return{sec:'BẮT BUỘC — cầu thủ vào sân',same:true};
+      if(k==='GOAL_NORMAL')return{sec:'TÙY CHỌN — người kiến tạo (để trống nếu không có)',same:true};
+      return null;
+    };
+    function rebuild(){
+      const role=$('#e-club').value,kind=$('#e-kind').value;
+      const mc=mcOfRole(m.id,role);
+      const meta=kindMeta(kind);
+      let prim=lineupOf(mc.id);
+      if(kind==='SUB')prim=prim.filter(mp=>onPitch(m.id,mp));
+      else prim=prim.filter(mp=>!redOf(m.id,mp.id));
+      $('#e-p1').innerHTML=prim.length?prim.map(mp=>
+        '<option value="'+mp.id+'">'+esc(mpLabel(mp))+' — '+(mp.role==='STARTING'?'đá chính':'dự bị')+'</option>').join('')
+        :'<option value="">— Không có cầu thủ hợp lệ (thiếu đội hình?) —</option>';
+      $('#p1-note').textContent=prim.length?'':'Trận chưa có đội hình của CLB này hoặc không còn cầu thủ hợp lệ.';
+      if(!meta){$('#sec-field').style.display='none';$('#e-p2').innerHTML='';return;}
+      $('#sec-field').style.display='';
+      $('#sec-lbl').textContent='· '+meta.sec;
+      const pid=parseInt($('#e-p1').value,10);
+      let sec=[];
+      if(kind==='SUB'){
+        sec=lineupOf(mc.id).filter(mp=>mp.role==='SUBSTITUTE'&&!enteredAsIn(m.id,mp.id)&&!redOf(m.id,mp.id)&&(!pid||mp.id!==pid));
+        $('#sec-note').textContent='Chỉ cầu thủ dự bị chưa vào sân (luật: mỗi cầu thủ chỉ vào sân 1 lần, ra rồi không vào lại).';
+      }else if(meta.same){
+        sec=lineupOf(mc.id).filter(mp=>!redOf(m.id,mp.id)&&(!pid||mp.id!==pid));
+        $('#sec-note').textContent=kind==='GOAL_NORMAL'?'Chỉ Goal thường mới có kiến tạo; phạt đền / phản lưới không có.':'';
+      }else{
+        mcsOf(m.id).forEach(mc2=>{
+          lineupOf(mc2.id).forEach(mp=>{if(!redOf(m.id,mp.id)&&(!pid||mp.id!==pid))
+            sec.push({mp,club:clubOfMc(mc2)});});
+        });
+        $('#sec-note').textContent='Người bị phạm lỗi (thường thuộc đội bạn).';
+        $('#e-p2').innerHTML=sec.map(x=>'<option value="'+x.mp.id+'">'+esc(mpLabel(x.mp))+' — '+esc(x.club.shortName)+'</option>').join('');
+        return;
+      }
+      $('#e-p2').innerHTML='<option value="">— (để trống) —</option>'+sec.map(mp=>
+        '<option value="'+mp.id+'">'+esc(mpLabel(mp))+'</option>').join('');
+    }
+    $('#e-club').onchange=rebuild;$('#e-kind').onchange=rebuild;$('#e-p1').onchange=rebuild;
+    rebuild();
+    $('#evform').onsubmit=e=>{
+      e.preventDefault();
+      const d={clubRole:$('#e-club').value,kind:$('#e-kind').value,
+        minute:$('#e-min').value,extra:$('#e-extra').value,
+        primaryId:parseInt($('#e-p1').value,10)||null,
+        secondaryId:parseInt($('#e-p2').value,10)||null,
+        note:$('#e-note').value.trim()};
+      const errs=validateEvent(m,d);
+      const fe=$('#ferr');
+      if(errs.length){
+        fe.style.display='block';
+        fe.innerHTML='Sự kiện chưa hợp lệ:<br>'+errs.map(x=>'— '+esc(x)).join('<br>');
+        return;
+      }
+      const wasScheduled=m.status==='SCHEDULED';
+      addEvent(m,d);
+      if(wasScheduled)m.status='ONGOING';
+      saveDB();
+      flash('Cập nhật sự kiện thành công!'+(wasScheduled?' Trận đấu chuyển sang "Đang diễn ra".':''));
+      back();
+    };
+  }
+};
+
+/* =====================================================================
+   KHOI DONG
+   ===================================================================== */
+makeSearchFlow('uc2','uc2-info');
+makeSearchFlow('uc3','uc3-events');
+loadDB();
+if(DB.session&&DB.users.some(u=>u.id===DB.session&&u.type==='staff')){
+  nav.stack=[{screen:'home',params:{}}];
+}else{DB.session=null;nav.stack=[{screen:'login',params:{}}];}
+render();
+</script>
+</body>
+</html>

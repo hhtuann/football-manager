@@ -123,6 +123,23 @@ Tái sử dụng fragment `WEB-INF/views/fragments/topbar.jspf`, `.error-box`, `
 
 **Đề xuất mở rộng:** CSS/JS theo trang mới, dùng chung phong cách đang có. Không thêm thư viện UI, sidebar, biểu đồ hoặc animation không phục vụ hai luồng nghiệp vụ.
 
+### 4.3. Chuẩn giao diện CN2 và CN3
+
+- **Nguồn chuẩn:** giao diện đang chạy của `gdPlayerSearch.jsp` và `search.css`. `docs/quan-ly-giai-bong-da.html` chỉ tham khảo bố cục/tương tác; không chép luật nghiệp vụ hoặc CSS đè lên CN1.
+- Mọi trang tìm kiếm dùng `common.css` → `search.css` → CSS bổ sung của chức năng. Tái sử dụng `.search-content`, `.back-link`, `.search-toolbar`, `.search-results`, `.table-scroll`; không tạo bảng màu hoặc bộ kích thước thứ hai.
+- Khung nội dung rộng tối đa 1040px, padding desktop 36px 24px; link **« Quay lại** cách tiêu đề 24px; h2 24px màu `#0a3f2c`. Font Arial, chữ chính `#1c2b23`, nền trang `#edf2ee` giữ nguyên CN1.
+- Thanh tìm kiếm chỉ có ô nhập và nút **Tìm**, gap 12px, không nền/viền/padding dạng card và không có nhãn hiển thị riêng. Nhãn input vẫn có cho trình đọc màn hình. Ô nhập padding 12px, font 16px, radius 10px, viền `#b3cbbd`; nút dùng màu và kích thước từ `search.css`.
+- Bảng tìm CN2 có vùng cuộn cao cố định 552px, header sticky; cuộn trong bảng thay vì kéo dài trang. Header `#e4f0e9`, chữ `#0a3f2c`, cell padding 10px 12px, font 16px và viền `#d7e2da` theo CN1; không nền trắng riêng cho tbody.
+- Ba trang tìm mùa/vòng/trận **không có cột Thao tác hoặc thẻ a trong ô tên**. Toàn dòng giữ URL trong `data-row-link`, click hoặc Tab/Enter để chọn; hover/focus làm nổi dòng. JS điều hướng tới URL đã escape, server vẫn kiểm tra ID/session.
+- Cột theo mẫu HTML: mùa = Mã giải đấu / Tên giải đấu / Trạng thái; vòng = Mã vòng đấu / Tên vòng đấu / Thời gian bắt đầu / Thời gian kết thúc / Trạng thái; trận = Mã trận đấu / Đội nhà / Đội khách / Ngày thi đấu / Giờ thi đấu / Trạng thái đăng kí. Mã hiển thị derived VLE+năm, R+ID, TR+ID, không phải cột mã nghiệp vụ mới trong DB. Trạng thái đăng kí derived từ hai đội có đủ 11 STARTING, không thay trạng thái trận.
+- Breadcrumb dùng fragment chung, hiển thị đủ **Trang chủ › Tìm mùa giải › Tìm vòng đấu › Tìm trận đấu › Thông tin trận đấu › Đăng ký cầu thủ thi đấu** đến cấp hiện tại. Các cấp trước là link mang đúng ngữ cảnh session, không ghép HTML động vào chuỗi breadcrumb. Giữ tên **Tìm mùa giải**, không tạo màn hình chọn Tournament.
+- Không lặp dòng phụ tên giải/năm/vòng bên dưới tiêu đề. Nội dung trận vẫn có thời gian, sân và trạng thái cần thiết; CLB và vai trò HOME/AWAY phải rõ ràng.
+- Thông tin trận bố trí **hai bảng đội nhà/đội khách trên hai cột desktop**, mỗi cột `minmax(0, 1fr)`, gap 18px. Mỗi bảng cuộn dọc độc lập, cao 320px; cột Mã cầu thủ / Họ tên / Số áo / Vị trí / Vai trò. Bỏ cột thời điểm đăng ký khỏi UI này; dữ liệu vẫn giữ trong model/DB. Table min-width 0, layout fixed, chữ xuống dòng, font 13.5px và padding 7px 10px theo panel mẫu để đủ năm cột mà không cuộn ngang. Dưới 700px chuyển một cột.
+- Khung/quay lại/h2/toolbar giữ nguyên class và CSS CN1; khi kiểm chứng so cả tọa độ, không chỉ computed styles. Asset CSS/JS CN2 có version URL để browser không dùng bản cũ sau cập nhật.
+- Trang chọn cầu thủ giữ select Không đăng ký / Đá chính / Dự bị, bộ đếm, thông báo điều lệ và lỗi server; không nhân đôi form hoặc thay luồng lưu một bên thành lưu hai bên.
+- Giữ trạng thái rỗng, lỗi/thành công, lựa chọn khi validation thất bại, trạng thái bị khóa; JS chỉ hỗ trợ tương tác, không thay kiểm tra quyền/ngữ cảnh/luật ở server.
+- **Áp dụng cho CN3:** tái sử dụng ba trang tìm kiếm và cùng quy ước khung/breadcrumb/bảng/nút; không thêm sidebar, dashboard hoặc hệ thống CSS mới. Phần 5–8 bên dưới là đề xuất lịch sử, không phải yêu cầu nghiệp vụ đã duyệt; xem báo cáo CN2/CN3 và AGENTS.
+
 ## 5. Đề xuất chức năng: đăng ký cầu thủ thi đấu
 
 ### Vai trò và luồng

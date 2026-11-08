@@ -30,6 +30,11 @@
         case "player-search" -> "/WEB-INF/views/gdPlayerSearch.jsp";
         case "player-add" -> "/WEB-INF/views/gdPlayerForm.jsp";
         case "player-edit" -> "/WEB-INF/views/gdPlayerForm.jsp";
+        case "season-search" -> "/WEB-INF/views/gdSeasonSearch.jsp";
+        case "round-search" -> "/WEB-INF/views/gdRoundSearch.jsp";
+        case "match-search" -> "/WEB-INF/views/gdMatchSearch.jsp";
+        case "match-info" -> "/WEB-INF/views/gdMatchInfo.jsp";
+        case "lineup-registration" -> "/WEB-INF/views/gdLineupRegistration.jsp";
         default -> null;
     };
 
@@ -43,6 +48,8 @@
         case "player-search" -> currentUser instanceof Staff;
         case "player-add" -> currentUser instanceof Staff;
         case "player-edit" -> currentUser instanceof Staff;
+        case "season-search", "round-search", "match-search", "match-info", "lineup-registration" ->
+                currentUser instanceof Staff;
         default -> false;
     };
 

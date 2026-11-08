@@ -6,9 +6,7 @@
 
 Ứng dụng quản lý giải bóng đá vô địch quốc gia, đồ án Phân tích và thiết kế hệ thống thông tin. Giữ kiến trúc Java/JSP hiện tại và giao diện tiếng Việt. Không tự chuyển sang Spring, React, ORM hoặc bổ sung hệ thống build frontend.
 
-Hai chức năng tiếp theo, chỉ triển khai khi người dùng yêu cầu:
-1. Nhân viên Ban tổ chức (`Staff`) đăng ký cầu thủ thi đấu cho cả đội nhà và đội khách của trận đấu.
-2. Nhân viên Ban tổ chức cập nhật kết quả thi đấu.
+CN2 — Staff đăng ký cầu thủ cho cả HOME/AWAY — đã triển khai. CN3 cập nhật kết quả chưa triển khai; chỉ làm khi người dùng yêu cầu.
 
 ### Nguồn yêu cầu và cách xử lý khác biệt
 
@@ -22,9 +20,9 @@ Hai chức năng tiếp theo, chỉ triển khai khi người dùng yêu cầu:
 
 - Yêu cầu trực tiếp mới nhất của người dùng quyết định phạm vi; báo cáo quyết định nghiệp vụ/mô hình. Dùng báo cáo pha thiết kế tương ứng để cụ thể hóa lời gọi DAO và màn hình; không dùng phần đề xuất cũ trong `DESIGN.md` để ghi đè.
 - Mã nguồn và SQL cho biết điều gì thực sự đã triển khai, không chứng minh báo cáo đã được hiện thực. Báo cáo cũng không chứng minh migration đã chạy.
-- Các báo cáo pha thiết kế ghi MySQL, báo cáo phân tích còn tiêu đề quy ước PHP 8 nhưng nội dung chỉ định Java. Stack repo vẫn Java 17/JSP/PostgreSQL; không đổi DB/ngôn ngữ chỉ vì các nhãn này.
+- Các báo cáo đã đồng bộ Java 17/JSP/PostgreSQL; không dùng nhãn hoặc đề xuất cũ để thay stack hiện tại.
 - Kiến trúc báo cáo là JSP–DAO, không bổ sung Controller/Service điều phối nghiệp vụ. `index.jsp` hiện có chỉ là điểm điều hướng/kiểm tra quyền; không tạo kiến trúc MVC/framework mới.
-- Khác biệt CN1 cần giữ rõ: báo cáo dùng `gdStaffHome.jsp`, session `staff`, `StaffDAO.checkLogin()`; code hiện dùng `gdHome.jsp`, session `currentUser`, `UserDAO.checkLogin()` trả subtype. Tái sử dụng đường đăng nhập đang chạy khi thêm CN2/CN3, không tạo session đăng nhập thứ hai hoặc lưu đối tượng chứa mật khẩu vào session theo kịch bản báo cáo.
+- CN1–CN2 dùng `gdHome.jsp`, session `currentUser`, `UserDAO.checkLogin()` trả subtype. Tái sử dụng đường đăng nhập khi thêm CN3; không tạo session xác thực thứ hai hoặc lưu đối tượng chứa mật khẩu vào session.
 - Báo cáo phân tích mô tả User abstract nhưng code hiện khởi tạo User cho đăng nhập và khán giả. Không đổi thành abstract trong scope CN2/CN3 nếu chưa xử lý toàn bộ caller và yêu cầu vai trò.
 - Nếu tài liệu còn mâu thuẫn thực chất hoặc thiếu định nghĩa, nêu đúng điểm cần quyết định; không suy diễn luật mới và không hỏi lại điều báo cáo đã chốt.
 
@@ -33,15 +31,16 @@ Hai chức năng tiếp theo, chỉ triển khai khi người dùng yêu cầu:
 - Java 17, Jakarta Servlet 6.0, JSP; Maven Wrapper; WAR `target/football-manager.war`.
 - Tomcat 10.1; PostgreSQL 17 trong Docker Compose; JDBC trực tiếp.
 - Không có framework frontend; CSS và JavaScript thuần.
-- `src/main/java/com/footballmanager/model/`: `User`, `Manager`, `Staff`, `Player`.
-- `src/main/java/com/footballmanager/dao/`: `DAO`, `UserDAO`, `PlayerDAO`; `ManagerDAO` và `StaffDAO` hiện là lớp rỗng.
+- `src/main/java/com/footballmanager/model/`: User và subtype, Tournament/Season/Rule/Round/Match, Club/Stadium và các lớp trung gian một chiều; các model sự kiện giữ đúng kế thừa.
+- `src/main/java/com/footballmanager/dao/`: DAO/UserDAO/PlayerDAO và TournamentDAO/SeasonDAO/RoundDAO/MatchDAO/ClubDAO cho CN2. Không có DAO trung gian.
 - `src/main/java/com/footballmanager/util/HTMLUtil.java`: escape dữ liệu HTML.
 - `src/main/webapp/index.jsp`: điểm điều hướng hiện có, whitelist route và phân quyền trang; không phải lớp Controller nghiệp vụ mới.
 - `src/main/webapp/do*.jsp`: xử lý hành động POST, không phải REST API.
 - `src/main/webapp/WEB-INF/views/`: trang `gdLogin`, `gdHome`, `gdPlayerSearch`, `gdPlayerForm`.
+- CN2: `gdSeasonSearch`, `gdRoundSearch`, `gdMatchSearch`, `gdMatchInfo`, `gdLineupRegistration`; ghi qua `doSaveLineup.jsp`. Route và quyền Staff cùng đăng ký ở `index.jsp`.
 - `src/main/webapp/WEB-INF/views/fragments/topbar.jspf`: topbar/breadcrumb dùng chung.
 - `src/main/webapp/assets/`: CSS và JS; xem tokens và quy ước trong `DESIGN.md`.
-- `database/`: schema gốc, seed, sequence và migration mở rộng.
+- `database/`: schema nền, migration mô hình, reset/seed/audit và JSON/CSV nguồn ngoài database.
 - `README.md`: cài đặt, tài khoản demo và walkthrough chức năng cầu thủ.
 
 ## 3. Hiện trạng đã đối chiếu
@@ -53,15 +52,23 @@ Hai chức năng tiếp theo, chỉ triển khai khi người dùng yêu cầu:
 - Trang quản lý cầu thủ dành cho `Staff`: tìm theo tên/mã, thêm, sửa, xóa.
 - Tìm kiếm JDBC dùng prepared statement và `ILIKE`.
 - Thêm/sửa cầu thủ dùng transaction. Thêm sinh username `CTxxx` qua `player_code_seq`; mật khẩu băm bằng PostgreSQL `crypt`/`pgcrypto`.
-- Hai chức năng còn lại đang là nút disabled trong `gdHome.jsp`; chưa có model/DAO/trang xử lý tương ứng.
+- CN2 mở cho Staff: tìm mùa → vòng → trận, xem thông tin trận từ cache, lưu độc lập HOME/AWAY qua transaction và CSRF token thật. CN3 vẫn disabled.
 
 ### CSDL: phân biệt file SQL với môi trường thực tế
 
-- `schema.sql` tạo `users`, `managers`, `staff`, `players`.
-- `football_manager_migration.sql` mở rộng mô hình giải đấu/CLB/trận/đăng ký/sự kiện và view tỷ số; đọc toàn bộ trước khi thiết kế schema mới.
-- Khi kiểm tra ngày 2026-11-04, CSDL Docker chỉ có bốn bảng gốc, 55 users và 52 players. Đây là ảnh chụp môi trường lúc soạn tài liệu, không phải invariant hoặc số lượng seed bắt buộc.
-- Không coi migration là đã chạy chỉ vì file tồn tại. Kiểm tra schema hiện tại trước khi áp dụng.
-- Không chạy lại seed hoặc reset volume để làm demo nếu đang có dữ liệu người dùng. Không đọc/in mật khẩu `.env` ra báo cáo.
+- Một đường setup: `database/schema.sql` → `database/football_manager_migration.sql` → `database/demo_reset.sql`. Schema gốc chỉ chạy cho database mới; không chạy lại trên schema đã có. Không có migration ladder/import bộ cũ sau reset. `player_code_sequence.sql` là utility sequence chuẩn, không phải bộ seed khác.
+- `demo_reset.sql` tự gọi `demo_seed.sql` và `demo_verify.sql` bằng `\ir`; khi copy vào container phải giữ ba file cạnh nhau. Reset yêu cầu `-v ON_ERROR_STOP=1 -v confirm_reset=RESET_FOOTBALL_DEMO`; có thể thêm `-v demo_date=YYYY-MM-DD`. Thiếu/sai xác nhận dừng trước mutation; không mount reset vào startup.
+- Reset xóa toàn bộ dữ liệu 20 bảng ứng dụng kể cả tài khoản, cấp lại ID/sequence; danh sách bảng explicit, không TRUNCATE CASCADE hoặc tắt FK/trigger. Seed/audit chạy trong transaction trước commit. Seed riêng yêu cầu database rỗng, không tự reset hoặc nhân đôi dữ liệu.
+- Phải dừng web, backup custom, kiểm tra `pg_restore -l` và phục hồi thử vào database cô lập trước reset. Xem README cho lệnh backup/restore; không xóa volume. Sau reset/redeploy phải recreate web và đăng nhập lại để bỏ session cũ. Nếu rollback lỗi, lưu ý sequence không hoàn toàn transactional; không mở web với trạng thái chưa kiểm tra.
+- Bộ mới: 1 Tournament, 5 Season (LPBank V.League 1 – 2026/27 và bốn mùa cũ chỉ có thông tin), 14 CLB, 316 cầu thủ nguồn đủ trường, 26 vòng/182 trận mùa chính. Mặc định ngày mốc theo `Asia/Ho_Chi_Minh`; vòng 1–6 FINISHED, vòng 7 sau mốc ít nhất bảy ngày, các vòng sau theo tuần. Ngày là lịch demo dịch, tên/năm mùa là nhãn nguồn.
+- Manager là tài khoản kỹ thuật; đội hình/sự kiện dựng phục vụ nghiệp vụ không phải biên bản VPF đã xác minh. `database/demo_manifest.json`, `database/demo_vpf_calendar_refresh.json` và JSON/CSV nguồn giữ nguồn/khác biệt/mapping/ca demo ngoài database, không thêm metadata bền vững. Sau reset sạch, R07-T01 (ID43) trống cả hai bên; R07-T02 (ID44) có HOME 11 chính + 3 dự bị để thử thay thế, AWAY trống; không hardcode các ID này vào ứng dụng.
+- Ghi chú refresh ở `database/demo_source_refresh.json`, bằng chứng hồ sơ ở `database/demo_vpf_profiles_refresh.json`: chỉ 4/387 request HTTP 200, còn lại timeout; 316 hồ sơ đủ trường được giữ từ nguồn có sẵn, không tuyên bố toàn bộ đã live-reverify. Manifest thiết kế 1.190 đăng ký/14 sự kiện; CT241 đã chấp hành án cộng dồn trước trận43, CT242/CT243 bị cấm trận43. Đây là contract fixture, không phải kết quả kiểm chứng runtime.
+- Giữ `seasons.name`; bỏ `users.source_key`, `rounds.round_number`, `matches.match_number`, `match_players.is_simulated`, `events.is_simulated`. Không tạo cột/bảng thay thế ngoài mô hình. Mọi thẻ đều tính án treo giò; không miễn thẻ theo nguồn hoặc cảnh báo mô phỏng trên UI. CN3 vẫn disabled.
+- Vòng lưu tên `Vòng 1`…`Vòng 26`; số vòng derived từ tên với fallback ổn định. `R07` và `Vòng 7` tìm cùng vòng. `R07-T01` derived theo ID trận trong toàn bộ vòng trước lọc tìm kiếm, không theo kickoff. URL/session/FK dùng ID; không suy số vòng từ ID cho mọi mùa. Không đổi transaction/baseline/cache để tiện đổi metadata.
+- Ngày vòng/trận chưa xác định vẫn được NULL trong schema, hiển thị “Chưa xác định” và khóa CN2 khi kickoff NULL. Bộ demo bố trí ngày cụ thể cho ca cần lưu.
+- Username: Player `CTxxx`, Manager `QLxxx`, Staff `NVxxx`, ít nhất ba chữ số và không cắt số >999. Reset đồng bộ `player_code_seq`; định danh VPF chỉ dùng mapping tạm hoặc file nguồn, không dùng username làm khóa nguồn.
+- Không coi reset/migration/deploy đã chạy vì file tồn tại. Hướng dẫn setup khác kết quả thực chạy; snapshot bộ cũ không chứng minh bộ mới. Không đọc/in mật khẩu `.env` ra báo cáo.
+- Đã thực thi reset ngày08/11/2026 sau backup và restore thử vào database cô lập; audit seed đạt, runtime COMMIT, WAR/image rebuild healthy.32 PostgreSQL tests đạt không skipped. Backup repo `pre-demo-reset-20261108.dump` chứa dữ liệu tài khoản, không commit. Sau browser smoke R07-T01 đã có HOME/AWAY11 chính, R07-T02 đã thay một dự bị; không coi runtime còn snapshot seed trống. CT317 tạo/xóa khi smoke, sequence tiếp theo đã tăng. Xem bằng chứng và giới hạn refresh nguồn trong README.
 
 ## 4. Quy ước phát triển
 
@@ -73,7 +80,7 @@ Hai chức năng tiếp theo, chỉ triển khai khi người dùng yêu cầu:
 - Dùng `PreparedStatement`, try-with-resources; lấy cấu hình từ `DAO.getConnection()` qua `JDBC_URL`, `DB_USER`, `DB_PASSWORD`.
 - Giữ tên bảng/cột snake_case như SQL hiện có. Không tạo bảng score/result song song khi đã có `v_match_scores` mà chưa giải quyết nguồn sự thật.
 - Các thao tác nhiều bảng phải atomic; rollback khi lỗi. Kiểm tra điều kiện nghiệp vụ trong cùng transaction với ghi dữ liệu để tránh request đồng thời vượt luật.
-- Migration bảo toàn dữ liệu; không drop/recreate schema hoặc vô hiệu hóa FK để tránh lỗi.
+- Migration thường phải bảo toàn dữ liệu; không drop/recreate schema hoặc vô hiệu hóa FK để tránh lỗi. Ngoại lệ reset demo được yêu cầu phải theo backup/dừng web/xác nhận/audit, không gọi ngầm từ startup.
 - ID của `Manager`, `Staff`, `Player` là ID `users`; đừng nhầm với ID `club_players` hay `match_players`.
 
 ### Bảo mật và xử lý request
@@ -85,7 +92,7 @@ Hai chức năng tiếp theo, chỉ triển khai khi người dùng yêu cầu:
 - Đăng nhập hiện hủy session cũ và tạo session mới; giữ hành vi này.
 - Ghi lỗi kỹ thuật qua `application.log`, hiển thị lỗi tiếng Việt có thể xử lý được; không lộ stack trace/SQL/credentials ra trang.
 - Sau ghi thành công dùng Post/Redirect/Get và flash message; không để refresh gửi lại thao tác.
-- Các handler hiện có chưa cung cấp cơ chế CSRF token chung. Đừng mô tả POST-only là chống CSRF; khi thêm bảo vệ, đồng bộ form và handler liên quan, không gửi token giả hoặc chỉ kiểm tra phía client.
+- Lưu CN2 có CSRF token đồng bộ form/handler. Các handler CN1 chưa có cơ chế CSRF chung; không mô tả POST-only là chống CSRF.
 
 ### Giao diện và scope
 
@@ -115,15 +122,15 @@ Nếu shell không nhận `.\mvnw.cmd`, dùng `cmd.exe /c mvnw.cmd package -Dski
 - `docker compose stop` dừng dịch vụ; `docker compose up -d` chạy lại image hiện có. Không dùng `down -v` trên dữ liệu người dùng.
 - Log: `docker compose logs --tail=100 web` và `docker compose logs --tail=100 db`.
 
-Tài khoản demo theo README: `NV001`/`staff@123`, `QL001`/`manager@123`, `CT001`/`player@123`, `khangia`/`spectator@123`. Tài khoản nhân viên đã được kiểm tra đăng nhập khi soạn tài liệu; việc có tài khoản Manager không đồng nghĩa đã có CLB gắn cho họ.
+Tài khoản sau reset theo README: `NV001`/`staff@123`, `QL001`/`manager@123`, `CT001`/`player@123`, `khangia`/`spectator@123`. Mật khẩu băm pgcrypto, chỉ dùng cho demo. Không suy từ tài liệu rằng runtime đã reset hoặc đăng nhập đã được kiểm chứng.
 
 ## 6. Kiểm chứng và điều kiện hoàn thành
 
-- `src/test/java` hiện chưa có suite tự động; `src/main/java/com/footballmanager/test/` chứa chương trình `main()` kiểm tra thủ công, không phải JUnit. `LoginDAOTest` còn dùng tên tài khoản cũ; không coi output build là chứng minh đăng nhập hay nghiệp vụ.
+- `src/test/java` có JUnit kiểm chứng CN2 trên PostgreSQL với ngữ cảnh dữ liệu cô lập; xem README để chạy. Các chương trình `main()` trong `src/main/java/com/footballmanager/test/` không phải JUnit; `LoginDAOTest` còn dùng tài khoản cũ.
 - `package -DskipTests` chỉ chứng minh build. JSP cần được truy cập thực trên Tomcat để phát hiện lỗi compile/runtime.
 - Khi thêm nghiệp vụ, giữ regression test cho invariant quan trọng theo công cụ thực sự được bổ sung; không viết test kiểm tra chuỗi source hoặc mock trả lại đúng dữ liệu vừa truyền.
 - Smoke qua browser: đăng nhập từng vai trò liên quan, mở trang, thao tác thành công, reload kiểm tra dữ liệu đã lưu; thử ID trái quyền, dữ liệu sai và trạng thái bị khóa.
-- Dữ liệu demo cho 2 chức năng phải đủ quan hệ: mùa/luật/vòng/trận, sân, 2 CLB và manager tương ứng, cầu thủ thuộc CLB. Seed riêng, có thể chạy lại, không ghi đè dữ liệu thật.
+- Dữ liệu demo CN1/CN2 phải đủ mùa/luật/vòng/trận, sân, hai CLB và Manager tương ứng, cầu thủ thuộc CLB. Tái lập qua reset có xác nhận; seed riêng từ chối database không rỗng. Không ghi đè dữ liệu thật để smoke.
 - Kiểm tra hồi quy chức năng cầu thủ và đăng xuất. Không xóa hoặc sửa dữ liệu thật chỉ để chứng minh smoke.
 - Cập nhật README/AGENTS.md khi triển khai thực tế làm thay đổi route, schema hoặc hướng dẫn chạy; chỉ cập nhật DESIGN.md cho thay đổi template giao diện. Thay đổi yêu cầu/mô hình phải đối chiếu báo cáo trong docs, không hợp thức hóa bằng đề xuất trong DESIGN.md. Báo đúng những gì đã chạy và các quyết định còn thiếu.
 
@@ -132,31 +139,33 @@ Tài khoản demo theo README: `NV001`/`staff@123`, `QL001`/`manager@123`, `CT00
 1. Đọc báo cáo phân tích và pha thiết kế CN tương ứng, SQL migration và handler gần nhất; kiểm tra schema runtime. Đọc DESIGN.md chỉ để giữ giao diện nhất quán.
 2. Đối chiếu contract CN2/CN3 ở mục dưới; chỉ làm rõ phần chưa được báo cáo xác định, không hỏi lại actor Staff, chuỗi tìm kiếm, kế thừa sự kiện hoặc khóa thêm sự kiện sau kết thúc.
 3. Dùng schema hiện có làm nền; bổ sung migration bảo toàn dữ liệu và demo cần thiết, không tạo quan hệ Club–Season hoặc lớp phiếu đã bị loại khỏi mô hình.
-4. Hoàn thiện luồng tìm mùa/vòng/trận dùng chung và đăng ký đội hình của Staff trước khi nhập sự kiện phụ thuộc match_players.
+4. Tái sử dụng luồng mùa/vòng/trận và đội hình CN2 đã triển khai; không tạo lại luồng tìm kiếm phẳng cho CN3.
 5. Hoàn thiện Staff thêm sự kiện và kết thúc trận, đồng bộ tỷ số derived và đối tượng session sau commit.
-6. Mở hai nút trên trang chủ cho Staff khi từng luồng thực sự chạy được; smoke và cập nhật tài liệu.
+6. Chỉ mở nút CN3 sau khi luồng thêm sự kiện/kết thúc trận chạy được; giữ CN2 đang hoạt động, smoke và cập nhật tài liệu.
 
 ## 8. Contract CN2/CN3 theo báo cáo hệ thống
 
-Các tên lớp, view và phương thức dưới đây là **thiết kế cần triển khai**, không phải danh sách file đã có. Đối chiếu chi tiết ở mục 1–3 của từng báo cáo pha thiết kế và mục 1–3, 5 của báo cáo phân tích.
+CN2 bên dưới đã có triển khai; CN3 là thiết kế cho lần tiếp theo, không phải endpoint hiện có. Đối chiếu chi tiết ở mục 1–3 của từng báo cáo pha thiết kế và mục 1–3, 5 của báo cáo phân tích.
 
 ### Luồng chung và session
 
 - Cả hai chức năng bắt đầu từ menu Staff → `gdSeasonSearch.jsp` → `gdRoundSearch.jsp` → `gdMatchSearch.jsp`. Giữ đủ ba cấp tìm kiếm, không thay bằng một danh sách trận phẳng chỉ vì template cũ đề xuất như vậy.
-- `SeasonDAO.searchSeason(key)` trả Season[]; `RoundDAO.searchRound(season, key)` trả Round[]; `MatchDAO.searchMatch(round, key)` trả Match[]. Trong Java có thể dùng List<T> theo quy ước model của báo cáo.
+- `SeasonDAO.searchSeason(tournament, key)`, `RoundDAO.searchRound(season, key)`, `MatchDAO.searchMatch(round, key)` trả `List<T>`. `TournamentDAO.getTournament()` yêu cầu đúng một dòng, không hardcode ID hoặc tùy tiện lấy dòng đầu.
 - Trang tìm kiếm submit về chính luồng trang đó; lưu danh sách kết quả vào session. Chọn seasonId/roundId/matchId phải khớp đối tượng trong ngữ cảnh session, không nhận đối tượng tùy ý chỉ từ hidden input.
 - `searchMatch()` tải đầy đủ `Match.matchClubs → MatchClub.matchPlayers → MatchPlayer.clubPlayer` và các tham chiếu cần hiển thị. Trang sau lấy đội hình từ Match trong session, không thêm DAO lấy lại đội hình cho mỗi trang/chọn CLB.
-- Dùng `currentUser` hiện có làm nguồn xác thực Staff; `staff` trong sơ đồ là ngữ cảnh nghiệp vụ, không buộc thêm một nguồn xác thực song song.
+- Dùng `currentUser` hiện có làm nguồn xác thực Staff; không tạo thêm một nguồn xác thực song song.
 - Khi đổi mùa/vòng/trận, không để selection/list cầu thủ của ngữ cảnh cũ bị dùng nhầm. Session là cache cho luồng màn hình, không thay kiểm tra quyền, trạng thái và ràng buộc hiện thời trong transaction ghi. Thiếu/hết session phải có đường quay lại tìm kiếm an toàn.
 
 ### CN2 — Staff đăng ký đội hình hai phía
 
 - Sau chọn trận: `gdMatchInfo.jsp` hiển thị thời gian, sân derived từ CLB HOME, hai bảng đội hình và hai link đăng ký HOME/AWAY. Trang này đọc Match đã có trong session, không gọi DAO tải đội hình.
-- `gdLineupRegistration.jsp` lấy Season và MatchClub từ ngữ cảnh đó, gọi `ClubDAO.getClubPlayerList(club, season)` để hiển thị thành viên CLB và lựa chọn vai trò.
-- POST `doSaveLineup.jsp` đóng gói các cặp ClubPlayer–role thành MatchPlayer, gắn danh sách vào MatchClub trong Match rồi gọi `MatchDAO.saveLineup(match, matchClub): boolean`.
+- `gdLineupRegistration.jsp` lấy Season và MatchClub từ ngữ cảnh đó, gọi `ClubDAO.getClubPlayerList(club)` để hiển thị thành viên CLB và lựa chọn vai trò.
+- POST `doSaveLineup.jsp` đóng gói các cặp ClubPlayer–role thành MatchPlayer trong MatchClub ứng viên riêng rồi gọi `MatchDAO.saveLineup(matchBaseline, candidate): boolean`. Giữ nguyên Match baseline/cache trước commit.
 - Sau lưu quay về thông tin trận và hiển thị đội hình mới hoặc lỗi. Chỉ cập nhật cache thành công sau commit; lỗi không được để session hiển thị đội hình chưa lưu như đã thành công.
 - Điều kiện đội hình theo báo cáo phân tích: đủ 11 STARTING, ít nhất một thủ môn, không vượt dự bị/ngoại binh theo Rule; treo giò derived từ thẻ theo mùa và ngưỡng luật. Không bỏ các điều kiện đã được báo cáo nêu vì SQL migration chưa thực thi chúng.
-- Rule có `requiredMainPlayers`; nếu dữ liệu khác 11, cần giải quyết khác biệt với ràng buộc phân tích thay vì hardcode bỏ qua Rule. Cách nhận diện thủ môn/ngoại binh, mốc tuổi, tính/chấp hành án treo giò, hạn đăng ký và thay thế đội hình cũ chưa được các kịch bản mô tả đủ thuật toán; chỉ làm rõ phần thiếu này, không tự thêm approval/draft.
+- Quyết định đã chốt: `requiredMainPlayers` khác 11 là lỗi cấu hình; ít nhất một STARTING có vị trí `Thủ môn`. Quốc tịch trim không phân biệt hoa/thường: `Việt Nam` là nội binh, khác là ngoại binh, thiếu không hợp lệ; quota tính toàn danh sách. Tuổi tối đa `ageLimit` ở ngày khai mạc mùa, thiếu/ngày sinh sau khai mạc bị từ chối.
+- Mọi thẻ đều tính: mỗi ngưỡng vàng tích lũy và mỗi thẻ đỏ rõ ràng phát sinh một trận cấm, cộng dồn trong mùa; chấp hành ở trận FINISHED tiếp theo của CLB nhận thẻ theo kickoff. Hai vàng tính hai vàng, chỉ bản ghi RedCard phát sinh án đỏ; không miễn vì nguồn/cách tạo ca demo.
+- Chỉ lưu khi SCHEDULED trước kickoff và chưa có event; thay thế giữ ID/registeredAt của đăng ký còn lại, từ chối baseline cũ khác DB; không thêm draft/approval.
 
 ### CN3 — Staff thêm sự kiện và kết thúc trận
 
@@ -171,7 +180,7 @@ Các tên lớp, view và phương thức dưới đây là **thiết kế cần
 ### Mô hình và DAO không được làm lệch
 
 - Chủ thể `Match` chứa `MatchClub`, MatchClub giữ Club và chứa MatchPlayer, MatchPlayer giữ ClubPlayer; `Club` chứa ClubPlayer, ClubPlayer giữ Player. Không tạo `MatchClubDAO`, `MatchPlayerDAO`, `ClubPlayerDAO`; thao tác qua MatchDAO/ClubDAO.
-- Không nối trực tiếp Club–Season, không khôi phục RegisteredClub/RegisteredPlayer, phiếu LineupRegistration/LineupDetail hoặc EventDetail đã bị loại. Tham số Season của getClubPlayerList không tự chứng minh cần bảng membership theo mùa.
+- Không nối trực tiếp Club–Season, không khôi phục RegisteredClub/RegisteredPlayer, phiếu LineupRegistration/LineupDetail hoặc EventDetail. `getClubPlayerList` chỉ nhận Club. Tournament chứa Season; Season không giữ tham chiếu ngược Tournament; chuỗi model khác cũng một chiều theo chủ thể chứa.
 - `Event` là lớp độc lập có EventDAO và các subtype Goal/Foul/YellowCard/RedCard/Substitution; không thay bằng một model generic chỉ chứa eventType và hai ID cầu thủ. UI vẫn có select loại sự kiện; Goal có type NORMAL/PENALTY/OWN.
 - Event có primaryPlayer; Goal có assister nullable chỉ cho NORMAL; Foul có victim; Substitution có playerIn, người ra là primaryPlayer. Người vào chỉ vào sân một lần trong trận; cầu thủ sự kiện phải thuộc đội hình cùng trận.
 - Lớp/entity đặt tên số ít; quan hệ nhiều biểu diễn bằng List<T>, không tạo lớp “DanhSach...”. Tỷ số, sân trận và treo giò là derived. Giữ FK vật lý để truy vấn không đồng nghĩa phải thêm quan hệ đối tượng ngược hoặc bảng dư thừa vào mô hình chốt.

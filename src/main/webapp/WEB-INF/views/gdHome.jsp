@@ -44,7 +44,8 @@
             <a class="function-btn" href="${pageContext.request.contextPath}/index.jsp?page=player-search">
                 Quản lý thông tin cầu thủ
             </a>
-            <button class="function-btn" disabled>Đăng ký cầu thủ thi đấu cho trận đấu</button>
+            <a class="function-btn" href="${pageContext.request.contextPath}/index.jsp?page=season-search">Đăng ký cầu
+                thủ thi đấu cho trận đấu</a>
             <button class="function-btn" disabled>Cập nhật kết quả thi đấu</button>
             <% } else if (user instanceof Player) { %>
             <button class="function-btn" disabled>Quản lý thông tin cầu thủ</button>

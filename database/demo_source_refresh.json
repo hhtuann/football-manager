@@ -1,0 +1,18 @@
+{
+  "refresh_date": "2026-11-08",
+  "calendar_url": "https://vpf.vn/season/v-league-2027/?action=calendar&pagejs=1",
+  "calendar_method": "Chromium rendered DOM after static reader returned no full calendar",
+  "calendar_artifact": "demo_vpf_calendar_refresh.json",
+  "calendar_observation": "182 published fixture pairs across26 normal and2 makeup sections. BN–ND remains published in both rounds15 and16, so round15 has BN twice and no NB. Preserve source conflict rather than invent another pairing.",
+  "makeup_round_difference": "Live section round_1295 is titled Bù V12 but contains CAHN–BN; retained CSV assigns CAHN–BN round8 and CAT–DONG round12. Preserve original full7-fixture round assignment; source section labels are ambiguous, not silently treated as corrected fixtures.",
+  "profile_artifact": "demo_vpf_profiles_refresh.json",
+  "profile_attempts": 387,
+  "profile_http200": 4,
+  "profile_limitations": "Most profile fetches timed out despite bounded8second attempts from same-origin browser fetch; urllib returned403 and direct club read timed out. Successful pages include Nguyễn Văn Công and Vũ Hồng Quân with matching DOB, nationality and metric fields. No claim that all retained profiles were reverified live.",
+  "retained_sources": ["vleague_2026_2027_players.json", "vleague_2026_2027_clubs.json", "vleague_2026_2027_fixtures.csv", "vleague_2026_2027_exclusions.json"],
+  "selection": "387 raw profiles ->317 with exact complete date, nationality, positive height/weight and shirt ->316 after excluding second HN shirt21 Vũ Đình Hai URL alias. Exclusions and stable profile-to-ID mapping are in demo_manifest.json, never persistent database columns.",
+  "demo_policy": "Five seasons; only main season has fixtures. Rule11 starters/9 bench/5 substitutions/3yellow threshold/age45/3 foreigners is an application demo rule, not a representation of complete VPF rules. Technical manager names are synthetic roles. Lineups and events are explicitly designed scenarios, not sourced historical match sheets or scores. Date labels remain2026/27 but schedule is relative to demo_date in Asia/Ho_Chi_Minh.",
+  "regeneration": "python database/generate_demo_seed.py",
+  "standalone_seed": "psql -X -v ON_ERROR_STOP=1 -v demo_date=2026-11-08 --single-transaction -f database/demo_seed.sql -f database/demo_verify.sql",
+  "audit_scope": "demo_verify.sql asserts the initial snapshot. Staff changes to walkthrough lineups intentionally make initial snapshot cardinality assertions unsuitable for later repeat auditing."
+}

@@ -155,6 +155,8 @@
     <p><%= switch (deleteResult) {
         case "success" -> "Thông tin cầu thủ và tài khoản đăng nhập đã được xóa.";
         case "not-found" -> "Không tìm thấy cầu thủ cần xóa!";
+        case "referenced" ->
+                "Không thể xóa cầu thủ đã thuộc CLB hoặc có lịch sử thi đấu. Dữ liệu liên quan được giữ nguyên.";
         default -> "Không thể xóa cầu thủ. Vui lòng thử lại!";
     } %>
     </p>

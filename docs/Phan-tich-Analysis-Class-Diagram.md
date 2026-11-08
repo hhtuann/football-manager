@@ -4,6 +4,11 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 
 > **Kiến trúc triển khai (pha cài đặt):** Java — mô hình **JSP + DAO**, không dùng Controller: JSP (View) gọi thẳng DAO/Entity, đúng phương pháp Full View ở mục 5 (View gọi entity không qua lớp trung gian điều khiển).
 
+> **Phạm vi hiện thực:** Java/JSP–DAO dùng PostgreSQL/JDBC; đăng nhập qua `UserDAO.checkLogin(User)` và session `currentUser: User`, không dùng session `staff`. CN1 và CN2 thuộc phạm vi hiện thực; UC3/CN3 ở mục 5.3 là thiết kế dự kiến, chưa có luồng cập nhật kết quả. Method đặt trên entity trong Full View là trách nhiệm phân tích; khi cài đặt, JSP gọi DAO tương ứng, không bổ sung Controller.
+
+> **Phạm vi dữ liệu demo 08/11/2026:** 1 Tournament, 5 Season (mùa chính 2026/27 và bốn mùa cũ chỉ có thông tin mùa), 14 CLB, 26 vòng/182 trận ở mùa chính. Cặp đấu, tên CLB và hồ sơ cầu thủ dựa nguồn VPF; lịch được dịch theo ngày mốc seed, đội hình/diễn biến bổ sung phục vụ các ca nghiệp vụ, không khẳng định là kết quả lịch sử đã xác minh. Nguồn và khác biệt ghi trong file repo, không thêm metadata bền vững hay nhãn/cảnh báo mô phỏng trên UI. Việc chuẩn bị dữ liệu không triển khai CN3.
+
+
 > **Các quy tắc mô hình hóa đã chốt với giảng viên:**
 > 1. Quan hệ có bội số > 1 ở cả hai đầu (n–n, 2–n) → **bắt buộc tách lớp trung gian**. Không dùng nhiều đường nối đặt vai trò cho cùng một cặp lớp.
 > 2. **Quan hệ gián tiếp qua chuỗi thì KHÔNG lập quan hệ trực tiếp** (Club không nối Season — đã gián tiếp qua Match: Club → MatchClub → Match → Round → Season).
@@ -16,10 +21,11 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 
 ## 1. Danh sách Entity Class (20 class)
 
-> **Quy ước thuộc tính (chuẩn PHP 8):**
+> **Quy ước thuộc tính (Java):**
 > - Mọi lớp **không kế thừa** có `+int id` (khóa); lớp kế thừa dùng id kế thừa (Staff/Manager/Player từ `User`; Goal/Foul/... từ `Event`).
 > - Kiểu dữ liệu **Java** (ngôn ngữ triển khai pha cài đặt): `int`, `String`, `double`, `LocalDate`/`LocalDateTime`; số nhiều dùng `List<T>`. Các thuộc tính phân loại (status của Match, role của MatchClub/MatchPlayer, type của Goal) dùng `String` nhận giá trị hằng.
 > - **Thuộc tính đối tượng**: giữa hai lớp có quan hệ aggregation/composition, **lớp chứa khai báo tường minh thuộc tính có kiểu là lớp bị chứa** — bội số 1 → kiểu đơn (`Club club`), 0..1 → tham chiếu có thể null (`MatchPlayer assister` — assister của Goal), n → `List<T>` (`List<MatchPlayer> matchPlayers`).
+> - **Đồ thị đối tượng một chiều:** chỉ whole giữ part/tham chiếu theo chuỗi chứa; `Tournament.seasons` giữ mùa giải, Season không khai báo tham chiếu ngược tới Tournament. Ngữ cảnh cha được giữ ở luồng JSP/session; khóa ngoại CSDL không buộc entity phải có liên kết ngược.
 
 ### 1.1. Người dùng & con người (4)
 
@@ -30,17 +36,22 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 | `Manager` | — | — | Kế thừa `User` |
 | `Player` | `+String nationality`, `+String primaryPosition`, `+double heightCm`, `+double weightKg` | — | Kế thừa `User`; tạo Player đồng thời tạo tài khoản |
 
+> `User` được ký hiệu abstract trong **mô hình miền phân tích** để diễn tả vai trò cha chung. Đây không phải khai báo Java hiện thực: thiết kế CN1–3 và code dùng `User` concrete làm đầu vào đăng nhập; `UserDAO.checkLogin(User)` trả đối tượng User/subtype đã xác thực. Không chuyển lớp Java thành abstract theo ký hiệu phân tích này.
+
+
 ### 1.2. Tổ chức & giải đấu (7)
 
 | Class | Thuộc tính | Thuộc tính đối tượng | Ghi chú |
 |---|---|---|---|
-| `Tournament` | `+int id`, `+String name` | `+List<Season> seasons` | Giải đấu (vd "Giải bóng đá vô địch quốc gia") — hiện chỉ 1 bản ghi nhưng là đơn vị tổ chức: tên giải lưu MỘT lần, không lặp theo mùa; tên hiển thị của mùa = `tournament.name + year` (derived) |
-| `Season` | `+int id`, `+int year`, `+LocalDate startDate`, `+LocalDate endDate`, `+String status` | `+Tournament tournament`, `+Rule rule`, `+List<Round> rounds` | Mùa giải (vd V.League 2026) — thuộc đúng một giải đấu |
-| `Rule` | `+int id`, `+int requiredMainPlayers`, `+int maxBenchPlayers`, `+int maxSubstitutions`, `+int yellowCardsToSuspend`, `+int ageLimit`, `+int maxForeignPlayers` | — | Điều lệ giải — kiểm tra đội hình (UC2), tính treo giò (UC3) |
-| `Round` | `+int id`, `+String name`, `+LocalDateTime startTime`, `+LocalDateTime endTime`, `+String status` | `+List<Match> matches` | |
-| `Match` | `+int id`, `+LocalDateTime kickoffTime`, `+String status` | `+List<MatchClub> matchClubs`, `+List<Event> events` | Tỉ số nằm ở `MatchClub` (mỗi bên một tỉ số) |
+| `Tournament` | `+int id`, `+String name` | `+List<Season> seasons` | Giải đấu duy nhất: Giải Bóng đá Vô địch Quốc gia Việt Nam; tên giải lưu một lần, tách khỏi tên thương mại của mùa |
+| `Season` | `+int id`, `+int year`, `+String name`, `+LocalDate startDate`, `+LocalDate endDate`, `+String status` | `+Rule rule`, `+List<Round> rounds` | Theo yêu cầu cập nhật 05/11/2026, lưu tên chính thức riêng: LPBank V.League 1 – 2026/27; không suy tên từ Tournament + năm; không thêm tham chiếu ngược |
+| `Rule` | `+int id`, `+int requiredMainPlayers`, `+int maxBenchPlayers`, `+int maxSubstitutions`, `+int yellowCardsToSuspend`, `+int ageLimit`, `+int maxForeignPlayers` | — | Điều lệ giải — kiểm tra đội hình và treo giò trong UC2; quy tắc sự kiện UC3 là thiết kế |
+| `Round` | `+int id`, `+String name`, `+LocalDateTime startTime`, `+LocalDateTime endTime`, `+String status` | `+List<Match> matches` | Tên chuẩn `Vòng 1` ... `Vòng 26`; số vòng hiển thị suy ra từ tên, không có cột `round_number`. Thời gian có thể null khi chưa công bố |
+| `Match` | `+int id`, `+LocalDateTime kickoffTime`, `+String status` | `+List<MatchClub> matchClubs`, `+List<Event> events` | Mã R07-T01 suy ra từ số vòng và thứ tự ID trận trong toàn vòng trước khi lọc tìm kiếm; không có cột `match_number`. Kickoff null khóa đăng ký; tỉ số derived từ sự kiện |
 | `Club` | `+int id`, `+String fullName`, `+String shortName`, `+int foundingYear`, `+String coachName` | `+Manager manager`, `+Stadium homeStadium`, `+List<ClubPlayer> clubPlayers` | `coachName` chỉ hiển thị — HLV không phải actor |
 | `Stadium` | `+int id`, `+String name`, `+int capacity`, `+String address` | — | |
+
+`Season.name` tiếp tục được lưu trong `seasons.name`. Số vòng/trận chỉ là giá trị hiển thị derived trong Java, không phải thuộc tính lưu mới hay tham chiếu ngược: `R07` và `Vòng 7` tìm cùng vòng; tên vòng không có số dùng fallback ổn định, không lỗi parse. Thứ tự trận dựa ID trong toàn vòng, không dựa kickoff, để mã không đổi khi lọc hoặc sửa lịch; session/URL/FK vẫn dùng ID. Không dùng `source_key`, `is_simulated` hoặc cờ `simulated` trong mô hình.
 
 ### 1.3. Lớp trung gian — chuỗi xương sống (3)
 
@@ -82,7 +93,7 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 
 | # | Quan hệ | Bội số | Loại | Ghi chú |
 |---|---|---|---|---|
-| 1 | Tournament – Season | 1 – 1..* | ◆ tại Tournament | một giải đấu có nhiều mùa giải (ít nhất 1); tên mùa hiển thị = tên giải + năm (derived) |
+| 1 | Tournament – Season | 1 – 1..* | ◆ tại Tournament | một giải đấu có nhiều mùa giải; tên chính thức của mùa lưu ở Season.name |
 | 2 | Season – Rule | 0..* – 1 | ◇ tại Season | **1 Rule áp dụng cho nhiều mùa giải**; mỗi mùa dùng đúng 1 điều lệ — dùng chung nên xóa mùa, điều lệ vẫn còn |
 | 3 | Season – Round | 1 – 1..* | ◆ tại Season | |
 | 4 | Round – Match | 1 – 1..* | ◆ tại Round | |
@@ -121,10 +132,17 @@ Cả 4 quan hệ sự kiện là **aggregation**: xóa sự kiện → MatchPlay
 
 **Ràng buộc nghiệp vụ:**
 1. Mỗi Match đúng 2 MatchClub (1 HOME + 1 AWAY); **sân thi đấu derived**: `MatchClub(HOME) → Club → Stadium`
-2. `MatchPlayer` chỉ hợp lệ khi `ClubPlayer.club == MatchClub.club` (cầu thủ đăng kí phải thuộc đúng CLB của đội-trong-trận)
+2. `ClubPlayer` của mỗi `MatchPlayer` phải thuộc `MatchClub.club`; kiểm tra qua `Club.clubPlayers`/CSDL, không khai báo liên kết ngược `ClubPlayer.club`.
 3. Cầu thủ được lớp con sự kiện trỏ tới phải có `MatchPlayer` trong cùng trận
-4. Đội hình hợp lệ theo `Rule` (đủ 11 STARTING, ≥1 thủ môn, ≤ ngoại binh, ≤ dự bị); **treo giò derived**: đếm thẻ YellowCard/RedCard → Match → Round → Season so với `yellowCardsToSuspend`
+4. Đội hình hợp lệ theo quy tắc CN2 đã chốt ở dưới; treo giò là dữ liệu suy ra từ lịch sử thẻ và các trận FINISHED chấp hành án trong cùng mùa, không chỉ so tổng thẻ với một ngưỡng.
 5. `/score` của MatchClub derived: Goal type NORMAL/PENALTY cộng bên scorer, type OWN cộng bên kia; xóa sự kiện tự trừ lại
+
+**Quy tắc CN2 đã chốt:** `requiredMainPlayers` phải bằng 11 (khác 11 là lỗi cấu hình); đúng 11 STARTING, ít nhất một **Thủ môn** trong STARTING; SUBSTITUTE ≤ `maxBenchPlayers`, cầu thủ không trùng và thuộc đúng CLB. Tuổi tròn tại `Season.startDate` ≤ `ageLimit` cho mọi cầu thủ. Quốc tịch được trim, so sánh không phân biệt hoa/thường: **Việt Nam** là nội binh, quốc tịch hợp lệ khác là ngoại binh; thiếu/rỗng bị từ chối. Tổng ngoại binh của STARTING + SUBSTITUTE ≤ `maxForeignPlayers`.
+
+Mỗi ngưỡng vàng `yellowCardsToSuspend` đạt thêm và mỗi RedCard ghi tường minh cộng thêm một trận cấm; hai YellowCard không tự tạo RedCard. Mọi thẻ đã lưu, kể cả thẻ của ca demo, đều tham gia tính án theo cùng quy tắc, không có diện miễn theo nguồn dữ liệu. Án được chấp hành tại các trận FINISHED kế tiếp của CLB nhận thẻ, theo thứ tự kickoff trong cùng mùa; trận chưa kết thúc không chấp hành án. DAO kiểm tra lịch sử này khi lưu CN2, không cần hiện thực luồng nhập sự kiện CN3.
+
+`saveLineup(Match, MatchClub)` kiểm tra lại CSDL trong giao dịch: chỉ trận SCHEDULED, trước kickoff và chưa có sự kiện; từ chối baseline đội hình đã lỗi thời. Giữ nguyên id/registeredAt của đăng ký còn giữ (kể cả đổi vai trò), chỉ tạo đăng ký mới cho người mới; chỉ thay đội hình bên được chọn. Chi tiết điều kiện lưu xem `Pha-Thiet-Ke-CN2.md`.
+
 
 ---
 
@@ -136,7 +154,7 @@ Cả 4 quan hệ sự kiện là **aggregation**: xóa sự kiện → MatchPlay
 4. **Lớp số ít** — không có lớp "DanhSach..."; danh sách = tập instance qua quan hệ (bội số n).
 5. **Tỉ số, sân, treo giò là derived** — không lưu cứng, suy ra từ quan hệ.
 6. **Dạng chuỗi chứa đựng của lớp trung gian** — A liên kết B sinh C phải thành chuỗi (A chứa C, C chứa B / hoặc đảo / hoặc C chứa cả hai), không để cả hai cha cùng chứa con. Mô hình chọn: lớp bối cảnh mạnh chứa trung gian (◆ — Match ⊃ MatchClub, Club ⊃ ClubPlayer, MatchClub ⊃ MatchPlayer), trung gian chứa lớp tham chiếu còn lại (◇) — đúng `class MatchClub { Club club; }` khi code.
-7. **Vì sao có lớp Tournament dù chỉ 1 bản ghi** — lớp tồn tại theo nghĩa nghiệp vụ (đơn vị tổ chức giải), không theo số dòng CSDL: (i) tên giải "Giải vô địch quốc gia" lưu MỘT lần thay vì lặp ở mọi mùa; (ii) tên hiển thị của mùa = tên giải + năm → derived; (iii) mở rộng sau này (Cúp QG, hạng nhất) không phải sửa cấu trúc.
+7. **Vì sao có lớp Tournament dù chỉ 1 bản ghi** — giải đấu là đơn vị nghiệp vụ, tên giải lưu một lần. Tên thương mại của từng mùa được lưu riêng ở `Season.name` theo yêu cầu cập nhật 05/11/2026, không còn derived từ tên giải + năm.
 
 ---
 
@@ -191,10 +209,10 @@ classDiagram
     class Season {
         +int id
         +int year
+        +String name
         +LocalDate startDate
         +LocalDate endDate
         +String status
-        +Tournament tournament
         +Rule rule
         +List<Round> rounds
     }
@@ -364,7 +382,7 @@ classDiagram
         +subSavePlayer
     }
 
-    %% ===== Thực thể (bản gốc PHP + method UC1) =====
+    %% ===== Thực thể Java + method trách nhiệm phân tích UC1 =====
     class User {
         <<entity>>
         +int id
@@ -415,10 +433,10 @@ classDiagram
     class Season {
         +int id
         +int year
+        +String name
         +LocalDate startDate
         +LocalDate endDate
         +String status
-        +Tournament tournament
         +Rule rule
         +List<Round> rounds
     }
@@ -527,17 +545,17 @@ classDiagram
 
 **`LoginView`, `StaffHomeView`** — như UC1.
 
-**Giao diện "Tìm giải đấu" → `SeasonSearchView`**
+**Giao diện "Tìm mùa giải" → `SeasonSearchView`**
 - `inSearchKey`, `subSearch`, `outsubSeasonList`
-- `searchSeason()` — searchKey → Season[] · `Season`
+- `searchSeason(Tournament, String)` — tournament, searchKey → Season[] · `Season`; cài đặt qua `SeasonDAO`, sau `TournamentDAO.getTournament()` (đúng một bản ghi, khác là lỗi cấu hình).
 
 **Giao diện "Tìm vòng đấu" → `RoundSearchView`**
 - `inSearchKey`, `subSearch`, `outsubRoundList`
-- `searchRound()` — searchKey → Round[] · `Round`
+- `searchRound(Season, String)` — season, searchKey → Round[] · `Round`.
 
 **Giao diện "Tìm trận đấu" → `MatchSearchView`**
 - `inSearchKey`, `subSearch`, `outsubMatchList`
-- `searchMatch()` — searchKey → Match[] · `Match`
+- `searchMatch(Round, String)` — round, searchKey → Match[] · `Match`.
 
 **Giao diện "Thông tin trận đấu" → `MatchInfoView`**
 - Hiển thị thời gian: `outMatchTime` · sân: `outStadium` · danh sách đã đăng ký đội nhà/đội khách: `outHomeLineup`, `outAwayLineup`
@@ -546,15 +564,15 @@ classDiagram
 
 **Giao diện "Đăng ký danh sách thi đấu" → `LineupRegistrationView`**
 - Danh sách cầu thủ của CLB: `outsubPlayerList` · chọn vai trò từng cầu thủ: `inRoleSelect` · Nút "Lưu danh sách đăng ký": `subSaveLineup`
-- `getPlayerList()` — Club, season → ClubPlayer[] · `Club` (thao tác trên ClubPlayer trung gian → đặt ở chủ thể Club)
+- `getClubPlayerList(Club)` — club → ClubPlayer[] · `Club` (cài đặt qua `ClubDAO`, không nhận Season).
 - `validateLineup()` — Match → boolean · `Match` (đọc ngưỡng từ `Rule`)
-- `saveLineup()` — Match → boolean · `Match` (MatchPlayer đã được setter gắn vào MatchClub → Match)
+- `saveLineup(Match, MatchClub)` — match, bên đăng ký đã chứa đội hình đề xuất → boolean · `Match` (cài đặt qua `MatchDAO`; kiểm tra lại dữ liệu CSDL).
 
-Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method vào đúng lớp + đường nối `SeasonSearchView → Season`, `RoundSearchView → Round`, `MatchSearchView → Match`, `MatchInfoView → Match` (getMatchInfo), `LineupRegistrationView → Match` (validateLineup, saveLineup), `LineupRegistrationView → Club` (getPlayerList).
+Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method vào đúng lớp + đường nối `SeasonSearchView → Season`, `RoundSearchView → Round`, `MatchSearchView → Match`, `MatchInfoView → Match` (getMatchInfo), `LineupRegistrationView → Match` (validateLineup, saveLineup), `LineupRegistrationView → Club` (getClubPlayerList). Các method này là trách nhiệm phân tích; JSP gọi DAO như thiết kế CN2.
 
 ### 5.3. UC3 — Cập nhật kết quả trận đấu
 
-**Diễn giải (bản chốt):**
+**Diễn giải thiết kế dự kiến — chưa hiện thực CN3:** các trách nhiệm Event/saveMatch dưới đây không phải API runtime đã có.
 
 **Giao diện "Đăng nhập" → `LoginView`** (giống chức năng 1)
 - Cần phương thức `checkLogin()` — Đầu vào: username, password · Đầu ra: boolean · Chủ thể: `User`
@@ -562,14 +580,14 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method v
 **Giao diện chính của nhân viên BTC → `StaffHomeView`** (giống chức năng 1)
 - Cần phương thức `getStaffInfo()` — Đầu vào: Staff · Đầu ra: Staff · Chủ thể: `Staff`
 
-**Giao diện "Tìm giải đấu" → `SeasonSearchView`** (giống chức năng 2)
-- Cần phương thức `searchSeason()` — Đầu vào: searchKey · Đầu ra: Season[] · Chủ thể: `Season`
+**Giao diện "Tìm mùa giải" → `SeasonSearchView`** (giống chức năng 2)
+- Cần phương thức `searchSeason(Tournament, String)` — Đầu vào: tournament, searchKey · Đầu ra: Season[] · Chủ thể: `Season`; dùng chung ngữ cảnh Tournament singleton của CN2.
 
 **Giao diện "Tìm vòng đấu" → `RoundSearchView`** (giống chức năng 2)
-- Cần phương thức `searchRound()` — Đầu vào: searchKey · Đầu ra: Round[] · Chủ thể: `Round`
+- Cần phương thức `searchRound(Season, String)` — Đầu vào: season, searchKey · Đầu ra: Round[] · Chủ thể: `Round`.
 
 **Giao diện "Tìm trận đấu" → `MatchSearchView`** (giống chức năng 2)
-- Cần phương thức `searchMatch()` — Đầu vào: searchKey · Đầu ra: Match[] · Chủ thể: `Match`
+- Cần phương thức `searchMatch(Round, String)` — Đầu vào: round, searchKey · Đầu ra: Match[] · Chủ thể: `Match`.
 
 **Giao diện "Chi tiết diễn biến trận đấu" → `MatchEventView`**
 - Hiển thị thời gian trận đấu: `outMatchTime`
@@ -579,7 +597,7 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method v
 - Nút "Thêm sự kiện mới": `subAddEvent`
 - Nút "Kết thúc trận đấu": `subEndMatch`
 - Cần phương thức `getMatchInfo()` — Đầu vào: Match · Đầu ra: Match · Chủ thể: `Match`
-- Cần phương thức `getEventList()` — Đầu vào: Match · Đầu ra: Event[] · Chủ thể: `Event`
+- Cần trách nhiệm `getEventList()` — Đầu vào phân tích: Match · Đầu ra: Event[] · Chủ thể: `Event`; chuyển sang thiết kế CN3 dự kiến thành `EventDAO.getEventList(matchId: int)`, lấy matchId từ Match đã chọn.
 - Cần phương thức `saveMatch()` (lưu trận khi kết thúc) — Đầu vào: Match · Đầu ra: boolean · Chủ thể: `Match`
 
 **Giao diện "Thêm sự kiện mới" → `EventFormView`**
@@ -592,7 +610,7 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method v
 - Nhập ghi chú: `inNote`
 - Nút "Lưu thông tin sự kiện": `subSaveEvent`
 - Cần phương thức `validateEvent()` — Đầu vào: Event · Đầu ra: boolean · Chủ thể: `Event`
-- Cần phương thức `addEvent()` — Đầu vào: Event · Đầu ra: boolean · Chủ thể: `Event`
+- Cần trách nhiệm `addEvent()` — Đầu vào phân tích: Event · Đầu ra: boolean · Chủ thể: `Event`; chuyển sang thiết kế CN3 dự kiến thành `EventDAO.addEvent(match: Match, event: Event)` để giữ ngữ cảnh trận. Đây là hợp đồng thiết kế, chưa hiện thực CN3.
 
 Sơ đồ Mermaid: bản thực thể ở mục 4 + 7 View trên + method vào đúng lớp (`Match`: getMatchInfo, saveMatch; `Event`: getEventList, validateEvent, addEvent; `Season/Round`: search...; `User`: checkLogin; `Staff`: getStaffInfo) + đường nối View–entity tương ứng.
 
@@ -610,7 +628,7 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 7 View trên + method vào �
 
 **6.5. Danh sách cầu thủ của CLB lấy từ đâu?** Từ quan hệ `Player – ClubPlayer – Club` (bội số n tự cho "danh sách") — không có lớp "DanhSachCauThu", không lưu danh sách trong phiếu.
 
-**6.6. Tỉ số/sân/treo giò ở đâu?** Derived — tỉ số từ các Event bàn thắng theo từng MatchClub; sân từ MatchClub(HOME) → Club → Stadium; treo giò đếm thẻ theo mùa so với Rule.
+**6.6. Tỉ số/sân/treo giò ở đâu?** Derived — tỉ số từ các Event bàn thắng theo từng MatchClub; sân từ MatchClub(HOME) → Club → Stadium; treo giò từ các ngưỡng vàng/RedCard tường minh trừ số án đã chấp hành ở các trận FINISHED kế tiếp của CLB nhận thẻ, theo kickoff cùng mùa (quy tắc CN2 ở mục 2).
 
 **6.7. Vì sao tách Tournament khỏi Season?** Tên mùa "V.League 2026" = tên giải + năm: tên giải là thuộc tính của đơn vị tổ chức (Tournament — 1 bản ghi), năm/thời gian/trạng thái là của mùa (Season — n bản ghi). Gộp thì lặp tên giải n lần; tách ra thì chuẩn hóa và sẵn sàng thêm giải mới.
 

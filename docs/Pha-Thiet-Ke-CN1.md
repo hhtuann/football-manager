@@ -1,6 +1,13 @@
 # PHA THIẾT KẾ — CHỨC NĂNG 1: THÊM CẦU THỦ
 
-Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + MySQL.
+Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC).
+
+> **Phạm vi hiện thực:** đăng nhập qua `UserDAO.checkLogin(User)`, session duy nhất cho danh tính là `currentUser: User`; không dùng session `staff`. `index.jsp` hiển thị `WEB-INF/views/gdHome.jsp`. CN1 và CN2 là phạm vi hiện thực; CN3 vẫn là thiết kế, menu không được mô tả như luồng cập nhật kết quả đã chạy. Ký hiệu `T[]` trong biểu đồ là tập đối tượng; Java dùng `List<T>`. Đồ thị đối tượng chỉ đi từ `Tournament.seasons` xuống dưới, không có tham chiếu ngược từ Season.
+
+> **Contract dữ liệu 08/11/2026:** giữ `Season.name`/`seasons.name`; số vòng và số thứ tự trận chỉ là dữ liệu hiển thị derived trong Java, không có cột `round_number`/`match_number` hay cờ mô phỏng. Số vòng suy từ tên chuẩn `Vòng 1` ... `Vòng 26` (fallback ổn định nếu tên không có số); thứ tự trận theo ID trong toàn vòng trước khi lọc, không theo kickoff. Mã như `R07-T01` không thay ID dùng trong URL/session/FK.
+
+> **Bộ demo:** 1 Tournament, 5 Season (2026/27 là mùa chính; bốn mùa cũ chỉ có thông tin mùa), 14 CLB, 26 vòng/182 trận mùa chính. Cặp đấu và hồ sơ CLB/cầu thủ dựa VPF; ngày được dịch theo mốc seed, đội hình/sự kiện phục vụ ca nghiệp vụ. Nguồn và phần bổ sung ghi ngoài database, không gắn nhãn/cảnh báo mô phỏng trên UI; mọi thẻ đều tính treo giò theo luật CN2. Dữ liệu sự kiện không đồng nghĩa triển khai CN3.
+
 
 ---
 
@@ -16,14 +23,14 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + MySQL.
 - Thuộc tính ẩn: không có
 - Submit form tới doLogin.jsp (action) để kiểm tra đăng nhập.
 
-**Giao diện chính nhân viên BTC: gdStaffHome.jsp**
+**Giao diện chính nhân viên BTC: gdHome.jsp**
 - Thuộc tính tường minh:
   - managePlayer: link
   - registerLineup: link
   - updateResult: link
 - Thuộc tính ẩn:
-  - staff: Staff
-- Không gọi DAO — đọc session lấy đối tượng staff, hiển thị thông tin + menu.
+  - currentUser: User
+- Không gọi DAO — đọc session lấy currentUser, hiển thị thông tin + menu.
 
 **Giao diện tìm cầu thủ: gdPlayerSearch.jsp**
 - Thuộc tính tường minh:
@@ -33,7 +40,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + MySQL.
   - choosePlayer: link
   - addPlayer: link
 - Thuộc tính ẩn:
-  - staff: Staff
+  - currentUser: User
   - listPlayer: Player[]
 - Submit về chính trang này (action: self): nhận searchKey từ param, gọi PlayerDAO thực hiện searchPlayer().
 
@@ -49,7 +56,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + MySQL.
   - primaryPosition: select
   - btnSave: submit
 - Thuộc tính ẩn:
-  - staff: Staff
+  - currentUser: User
 - Submit form tới doAddPlayer.jsp (action) để lưu cầu thủ mới vào hệ thống.
 
 ### 1.2. Tầng thao tác dữ liệu có các lớp DAO
@@ -57,10 +64,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + MySQL.
 **UserDAO:**
 - Phương thức checkLogin(user: User): User
 
-**StaffDAO (kế thừa từ UserDAO):**
-- Phương thức checkLogin(user: User): Staff — override, setter đầy đủ thông tin ngay trong checkLogin
-
-**PlayerDAO (kế thừa từ UserDAO):**
+**PlayerDAO (kế thừa DAO):**
 - Phương thức searchPlayer(key: String): Player[]
 - Phương thức addPlayer(player: Player): boolean
 
@@ -85,18 +89,18 @@ classDiagram
     class doLogin {
         <<jsp do>>
         +user: User
-        +call StaffDAO: checkLogin
+        +call UserDAO: checkLogin
     }
-    class gdStaffHome {
+    class gdHome {
         <<jsp gd>>
-        +staff: Staff
+        +currentUser: User
         +managePlayer: link
         +registerLineup: link
         +updateResult: link
     }
     class gdPlayerSearch {
         <<jsp gd>>
-        +staff: Staff
+        +currentUser: User
         +searchKey: input
         +btnSearch: submit
         +action: gdPlayerSearch.jsp
@@ -107,7 +111,7 @@ classDiagram
     }
     class gdPlayerForm {
         <<jsp gd>>
-        +staff: Staff
+        +currentUser: User
         +fullName: input
         +dob: input
         +nationality: input
@@ -134,27 +138,15 @@ classDiagram
         +UserDAO()
         +checkLogin(user: User): User
     }
-    class StaffDAO {
-        +StaffDAO()
-        +checkLogin(user: User): Staff
-    }
     class PlayerDAO {
         +PlayerDAO()
-        +checkLogin(user: User): Player
         +searchPlayer(key: String): Player[]
         +addPlayer(player: Player): boolean
     }
-    class ManagerDAO {
-        +ManagerDAO()
-        +checkLogin(user: User): Manager
-    }
     DAO <|-- UserDAO
-    UserDAO <|-- StaffDAO
-    UserDAO <|-- PlayerDAO
-    UserDAO <|-- ManagerDAO
+    DAO <|-- PlayerDAO
 
     class User {
-        <<abstract>>
         +id: int
         +username: String
         +password: String
@@ -182,10 +174,10 @@ classDiagram
     class Season {
         +id: int
         +year: int
+        +name: String
         +startDate: LocalDate
         +endDate: LocalDate
         +status: String
-        +tournament: Tournament
         +rule: Rule
         +rounds: Round[]
     }
@@ -298,14 +290,14 @@ classDiagram
 
     StaffActor --> gdLogin
     gdLogin --> doLogin : submit [btnLogin]
-    doLogin --> gdStaffHome : redirect
-    gdStaffHome --> gdPlayerSearch : link [managePlayer]
+    doLogin --> gdHome : redirect
+    gdHome --> gdPlayerSearch : link [managePlayer]
     gdPlayerSearch --> gdPlayerSearch : submit [btnSearch]
     gdPlayerSearch --> gdPlayerForm : link [addPlayer]
     gdPlayerForm --> doAddPlayer : submit [btnSave]
     doAddPlayer --> gdPlayerSearch : redirect
 
-    doLogin ..> StaffDAO : checkLogin
+    doLogin ..> UserDAO : checkLogin
     gdPlayerSearch ..> PlayerDAO : searchPlayer
     doAddPlayer ..> PlayerDAO : addPlayer
 ```
@@ -321,14 +313,14 @@ classDiagram
 
 **doLogin.jsp**
 - Nhận thông tin từ param username / password
-- Tạo đối tượng User (đóng gói username, password) và lưu vào session
-- Gọi StaffDAO thực hiện checkLogin() — kiểm tra đăng nhập
-- Lưu đối tượng staff hoàn chỉnh vào session
-- Hiển thị thông báo lỗi từ param nếu đăng nhập sai
-- Chuyển tới gdStaffHome.jsp nếu đăng nhập đúng, quay lại gdLogin.jsp nếu sai
+- Tạo đối tượng User (đóng gói username, password) làm dữ liệu đầu vào (không lưu thông tin đăng nhập vào session)
+- Gọi UserDAO thực hiện checkLogin(user) — kiểm tra đăng nhập
+- Lưu đối tượng User đã xác thực vào session currentUser
+- Hiển thị lỗi bằng request attribute khi đăng nhập sai
+- Redirect index.jsp để hiển thị gdHome.jsp nếu đăng nhập đúng; forward gdLogin.jsp nếu sai
 
-**gdStaffHome.jsp**
-- Nhận thông tin staff từ session
+**gdHome.jsp**
+- Nhận currentUser từ session
 - Hiện giao diện (thông tin nhân viên + menu)
 - Nhân viên click nút managePlayer → chuyển gdPlayerSearch.jsp
 
@@ -365,19 +357,19 @@ classDiagram
 | 4 | doLogin.jsp gọi lớp User |
 | 5 | Lớp User đóng gói username, password thành đối tượng user |
 | 6 | Lớp User trả đối tượng user cho doLogin.jsp |
-| 7 | doLogin.jsp lưu đối tượng user vào session |
-| 8 | doLogin.jsp gọi lớp StaffDAO |
-| 9 | StaffDAO thực hiện hàm checkLogin() |
-| 10 | Hàm checkLogin() thực hiện và gọi lớp Staff |
-| 11 | Lớp Staff khởi tạo đối tượng staff và thực hiện hàm setter() |
-| 12 | Lớp Staff trả kết quả cho hàm checkLogin() |
-| 13 | Hàm checkLogin() trả kết quả cho doLogin.jsp |
-| 14 | doLogin.jsp lưu đối tượng staff vào session |
-| 15 | doLogin.jsp gọi gdStaffHome.jsp |
-| 16 | gdStaffHome.jsp đọc session lấy đối tượng staff |
-| 17 | gdStaffHome.jsp hiển thị thông tin cho nhân viên |
+| 7 | doLogin.jsp giữ user làm đầu vào kiểm tra đăng nhập |
+| 8 | doLogin.jsp gọi lớp UserDAO |
+| 9 | UserDAO thực hiện hàm checkLogin(user) |
+| 10 | Hàm checkLogin(user) đọc bản ghi người dùng |
+| 11 | UserDAO tạo User đã xác thực từ bản ghi |
+| 12 | UserDAO trả User cho hàm checkLogin(user) |
+| 13 | Hàm checkLogin(user) trả kết quả cho doLogin.jsp |
+| 14 | doLogin.jsp lưu đối tượng User đã xác thực vào session currentUser |
+| 15 | doLogin.jsp gọi gdHome.jsp |
+| 16 | gdHome.jsp đọc session lấy currentUser |
+| 17 | gdHome.jsp hiển thị thông tin cho nhân viên |
 | 18 | Nhân viên BTC click nút managePlayer |
-| 19 | gdStaffHome.jsp gọi gdPlayerSearch.jsp |
+| 19 | gdHome.jsp gọi gdPlayerSearch.jsp |
 | 20 | gdPlayerSearch.jsp hiển thị giao diện cho nhân viên |
 | 21 | Nhân viên BTC nhập "Hải", click nút btnSearch |
 | 22 | gdPlayerSearch.jsp nhận searchKey từ request |
@@ -413,9 +405,9 @@ sequenceDiagram
     participant gdL as gdLogin.jsp
     participant doL as doLogin.jsp
     participant u as user: User
-    participant st as staff: Staff
-    participant sDAO as StaffDAO
-    participant gdH as gdStaffHome.jsp
+    participant st as currentUser: User
+    participant sDAO as UserDAO
+    participant gdH as gdHome.jsp
     participant gdS as gdPlayerSearch.jsp
     participant pDAO as PlayerDAO
     participant p as player: Player
@@ -428,16 +420,16 @@ sequenceDiagram
     doL->>u: Gọi lớp User
     u->>u: Đóng gói username, password thành đối tượng user
     u-->>doL: Trả đối tượng user
-    doL->>doL: Lưu đối tượng user vào session
-    doL->>sDAO: Gọi lớp StaffDAO
-    sDAO->>sDAO: Thực hiện hàm checkLogin()
-    sDAO->>st: Hàm checkLogin() gọi lớp Staff
-    st->>st: Khởi tạo đối tượng staff và thực hiện hàm setter()
-    st-->>sDAO: Trả kết quả cho hàm checkLogin()
-    sDAO-->>doL: Hàm checkLogin() trả kết quả
-    doL->>doL: Lưu đối tượng staff vào session
-    doL->>gdH: Gọi gdStaffHome.jsp
-    gdH->>gdH: Đọc session lấy đối tượng staff
+    doL->>doL: Giữ user làm đầu vào kiểm tra đăng nhập
+    doL->>sDAO: Gọi lớp UserDAO
+    sDAO->>sDAO: Thực hiện hàm checkLogin(user)
+    sDAO->>st: Tạo User từ bản ghi đã xác thực
+    st->>st: Gán dữ liệu người dùng
+    st-->>sDAO: Trả kết quả cho hàm checkLogin(user)
+    sDAO-->>doL: Hàm checkLogin(user) trả kết quả
+    doL->>doL: Lưu đối tượng User đã xác thực vào session currentUser
+    doL->>gdH: Gọi gdHome.jsp
+    gdH->>gdH: Đọc session lấy currentUser
     gdH-->>NV: Hiển thị thông tin cho nhân viên
     NV->>gdH: Click nút managePlayer
     gdH->>gdS: Gọi gdPlayerSearch.jsp

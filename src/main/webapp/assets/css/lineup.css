@@ -1,0 +1,210 @@
+/* CN1 search.css owns shared page, toolbar, table and back-link styling. */
+.cn2-search .table-scroll {
+    height: 552px;
+}
+
+.cn2-search [data-row-link] {
+    cursor: pointer;
+}
+
+.cn2-search [data-row-link]:hover,
+.cn2-search [data-row-link]:focus-within {
+    background: #e5f1eb;
+}
+
+.cn2-search [data-row-link]:focus-visible {
+    outline: 2px solid #0e5a3c;
+    outline-offset: -3px;
+}
+
+.lineup-content h3 {
+    margin: 0 0 12px;
+    color: #0a3f2c;
+    font-size: 18px;
+}
+
+.lineup-content p {
+    line-height: 1.5;
+}
+
+.lineup-content a:not(.lineup-button) {
+    color: #0e5a3c;
+}
+
+.lineup-content select {
+    min-height: 44px;
+    min-width: 155px;
+    padding: 10px 40px 10px 12px;
+    border: 1px solid #b3cbbd;
+    border-radius: 10px;
+    background-color: white;
+    color: #1c2b23;
+    font: inherit;
+}
+
+.lineup-content button, .lineup-button {
+    display: inline-block;
+    min-height: 44px;
+    padding: 12px 22px;
+    border: 1px solid #0e5a3c;
+    border-radius: 10px;
+    background: #0e5a3c;
+    color: white;
+    font: inherit;
+    font-size: 16px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.lineup-content button:hover, .lineup-button:hover {
+    background: #0a3f2c;
+}
+
+.lineup-button.secondary {
+    background: #edf6f0;
+    color: #0e5a3c;
+}
+
+.lineup-button.secondary:hover {
+    background: #e5f1eb;
+}
+
+.lineup-content button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.lineup-content :focus-visible {
+    outline: 2px solid #0e5a3c;
+    outline-offset: 3px;
+}
+
+.match-summary {
+    margin: 0 0 20px;
+}
+
+.match-summary p {
+    margin: 6px 0;
+}
+
+.lineup-sides {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.lineup-panel {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #cddfd3;
+    border-radius: 12px;
+}
+
+.lineup-panel .table-scroll {
+    height: 320px;
+}
+
+.lineup-panel .search-results table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 13.5px;
+}
+
+.lineup-panel .search-results th, .lineup-panel .search-results td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 7px 10px;
+    vertical-align: top;
+    line-height: 1.5;
+}
+
+.lineup-panel .search-results th {
+    font-size: 12.5px;
+}
+
+.lineup-panel th:nth-child(1) {
+    width: 18%;
+}
+
+.lineup-panel th:nth-child(2) {
+    width: 32%;
+}
+
+.lineup-panel th:nth-child(3) {
+    width: 11%;
+}
+
+.lineup-panel th:nth-child(4) {
+    width: 20%;
+}
+
+.lineup-panel th:nth-child(5) {
+    width: 19%;
+}
+
+.lineup-panel .lineup-button {
+    margin-top: 16px;
+}
+
+.notice, .lineup-counts, .success-box {
+    padding: 12px;
+    border: 1px solid #b3cbbd;
+    border-radius: 8px;
+    background: #e4f0e9;
+    margin: 16px 0;
+    line-height: 1.5;
+}
+
+.success-box {
+    color: #0e5a3c;
+    border-color: #43866a;
+}
+
+.lineup-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.lineup-actions a {
+    font-size: 16px;
+}
+
+.empty-state, .muted {
+    color: #486656;
+    line-height: 1.5;
+}
+
+.sr-only {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.topbar-info {
+    min-width: 0;
+}
+
+.topbar-info h1 {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+    .lineup-sides {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .lineup-panel {
+        padding: 12px;
+    }
+}

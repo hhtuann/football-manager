@@ -54,3 +54,7 @@ replay_pid*
 # Local OS files
 Thumbs.db
 Desktop.ini
+
+# Local database backups contain account data
+*.dump
+backups/
