@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
 <%@ page import="com.footballmanager.model.*" %>
 <%@ page import="com.footballmanager.dao.MatchDAO" %>
-<%@ page import="com.footballmanager.util.LineupSession" %>
+<%@ page import="com.footballmanager.util.SessionContext" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ page import="java.sql.SQLException" %>
 <%@ page import="java.util.*" %>
@@ -21,7 +21,7 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         try {
             ctx.requireCsrf(request);
             ctx.requireEvents(request);
@@ -38,7 +38,7 @@
                 if (!permitted.contains(name)) {
                     throw new IllegalArgumentException("Biểu mẫu chứa tham số không hợp lệ.");
                 }
-                LineupSession.single(request, name);
+                SessionContext.single(request, name);
             }
             if ("FINISHED".equals(ctx.match.getStatus())) {
                 throw new IllegalArgumentException("Trận đấu đã kết thúc.");

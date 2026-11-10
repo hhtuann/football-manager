@@ -79,7 +79,7 @@ public class Match {
     }
 
     public String getDisplayCode() {
-        return roundNumber == null || matchNumber == null ? "Chưa xác định" : String.format("R%02d-T%02d",
+        return roundNumber == null || matchNumber == null ? "Chưa xác định" : String.format("R%02d - T%02d",
             roundNumber, matchNumber);
     }
 }

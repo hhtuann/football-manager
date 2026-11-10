@@ -2,7 +2,7 @@
 
 Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC).
 
-> Danh tính đăng nhập kế thừa CN1 là session `currentUser: User` qua `UserDAO`, không phải session `staff`. Các tham số ID chỉ chọn đối tượng trong ngữ cảnh đã tải, không tạo đối tượng tin cậy trực tiếp từ request.
+> Danh tính đăng nhập kế thừa CN1 là session `currentUser: User` qua `UserDAO`, không phải session `staff`. Ngữ cảnh CN2/CN3 dùng chung `SessionContext` với session key `sessionContext`, thay `LineupSession`, không thêm model/service. GET dùng `season=VLE2026&round=R07&match=T01`, phân giải mã từ kết quả đã tải trong ngữ cảnh session, không dựng đối tượng tin cậy từ request. POST giữ hidden ID thật, flow và CSRF; đổi chức năng hoặc mùa/vòng/trận vô hiệu hóa ngữ cảnh cũ.
 
 ---
 
@@ -31,7 +31,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
   - chooseRound: link
 - Thuộc tính ẩn:
   - currentUser: User
-  - season: Season (đọc session khớp seasonId từ param)
+  - season: Season (đọc sessionContext, khớp mã season từ GET với kết quả mùa đã tải)
   - listRound: Round[]
 - Submit về chính trang này (action: self): nhận searchKey từ param + đọc session lấy season, gọi RoundDAO thực hiện searchRound(season, key).
 
@@ -43,7 +43,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
   - chooseMatch: link
 - Thuộc tính ẩn:
   - currentUser: User
-  - round: Round (đọc session khớp roundId từ param)
+  - round: Round (đọc sessionContext, khớp mã round từ GET trong mùa đã chọn)
   - listMatch: Match[]
 - Submit về chính trang này (action: self): nhận searchKey từ param + đọc session lấy round, gọi MatchDAO thực hiện searchMatch(round, key) — hàm tải trọn chuỗi ◆ (MatchPlayer → MatchClub → Match), lưu listMatch vào session.
 
@@ -57,7 +57,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
   - registerAway: link
 - Thuộc tính ẩn:
   - currentUser: User
-  - match: Match (đọc session khớp matchId từ param — đã chứa đầy đủ matchClubs + matchPlayers từ searchMatch)
+  - match: Match (đọc sessionContext, khớp mã match từ GET trong vòng đã chọn — đã chứa đầy đủ matchClubs + matchPlayers từ searchMatch)
   - homeLineup: MatchPlayer[]
   - awayLineup: MatchPlayer[]
 - Đọc session lấy match → hiển thị thông tin trận + 2 bảng đội hình. KHÔNG gọi DAO — đội hình đã có sẵn trong match từ searchMatch.
@@ -97,7 +97,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
 #### Quy tắc CN2 đã chốt
 
 - **Ngữ cảnh một chiều:** `Tournament.seasons → Season.rounds → Round.matches → Match.matchClubs → MatchClub.matchPlayers`; Season không giữ Tournament. `Club.clubPlayers` chứa danh sách cầu thủ CLB; `getClubPlayerList(Club)` không nhận Season. Điều lệ lấy từ Season trong ngữ cảnh cha đã chọn, không thêm liên kết ngược vào entity.
-- **Mã hiển thị (cập nhật 10/11/2026):** giữ `Season.name`/`seasons.name`; `Round.number` lưu ở `rounds.number`, bắt buộc số dương và duy nhất theo mùa. Mã `R07` lấy từ số vòng, không regex tên; tìm theo tên hiện tại hoặc mã. Đổi tên vòng không đổi mã vòng/trận. `R07-T01` dùng số vòng và thứ tự ID trận trong **toàn vòng trước khi lọc**, không theo kickoff. URL/session/FK vẫn dùng ID, không renumber khóa chính.
+- **Mã hiển thị (cập nhật 10/11/2026):** giữ `Season.name`/`seasons.name`; `Round.number` lưu ở `rounds.number`, bắt buộc số dương và duy nhất theo mùa. Mã `R07` lấy từ số vòng, không regex tên; tìm theo tên hiện tại hoặc mã. Đổi tên vòng không đổi mã vòng/trận. UI giữ `R07-T01`, dùng số vòng và thứ tự ID trận trong **toàn vòng trước khi lọc**, không theo kickoff. GET dùng mã `season=VLE2026&round=R07&match=T01` phân giải qua `sessionContext`; POST giữ ID thật và CSDL giữ khóa chính/FK, không renumber.
 - **Cấu hình và vai trò:** `Rule.requiredMainPlayers` bắt buộc bằng **11**; giá trị khác là lỗi cấu hình, không đổi số người đá chính theo giá trị đó. Đội hình có đúng 11 `STARTING`, trong đó ít nhất một cầu thủ có `primaryPosition` là **Thủ môn**; số `SUBSTITUTE` không vượt `maxBenchPlayers`. Mỗi cầu thủ chỉ xuất hiện một lần và thuộc đúng CLB của MatchClub đang đăng ký.
 - **Tuổi:** tuổi tròn tại `Season.startDate` phải **≤ `Rule.ageLimit`**, áp dụng cho cả đá chính và dự bị; không tính theo ngày lưu hay ngày đá trận.
 - **Quốc tịch:** trim trước khi so sánh không phân biệt hoa/thường; **Việt Nam** là nội binh, quốc tịch hợp lệ khác là ngoại binh. Quốc tịch thiếu/rỗng là dữ liệu không hợp lệ, không xem là nội binh. Tổng ngoại binh trên **toàn bộ đội hình** (STARTING + SUBSTITUTE) không vượt `maxForeignPlayers`.
@@ -429,7 +429,7 @@ classDiagram
 
 **gdRoundSearch.jsp**
 - Hiện giao diện (form tìm kiếm)
-- Nhận searchKey từ param, đọc session lấy đối tượng season khớp seasonId từ param
+- Nhận searchKey từ param, đọc sessionContext lấy đối tượng season khớp mã season từ GET
 - Gọi RoundDAO thực hiện searchRound(season, searchKey) — lấy danh sách vòng đấu khớp từ khoá
 - Lưu danh sách Round[] vào session
 - Hiện danh sách vòng đấu cho nhân viên
@@ -437,14 +437,14 @@ classDiagram
 
 **gdMatchSearch.jsp**
 - Hiện giao diện (form tìm kiếm)
-- Nhận searchKey từ param, đọc session lấy đối tượng round khớp roundId từ param
+- Nhận searchKey từ param, đọc sessionContext lấy đối tượng round khớp mã round từ GET trong mùa đã chọn
 - Gọi MatchDAO thực hiện searchMatch(round, searchKey) — lấy danh sách trận đấu khớp từ khoá
 - Lưu danh sách Match[] vào session
 - Hiện danh sách trận đấu cho nhân viên
 - Nhân viên click vào dòng trận đấu → chuyển gdMatchInfo.jsp
 
 **gdMatchInfo.jsp**
-- Đọc session lấy đối tượng match khớp matchId từ param
+- Đọc sessionContext lấy đối tượng match khớp mã match từ GET trong vòng đã chọn
 - Hiện thông tin trận và đội hình cho nhân viên
 - Nhân viên click nút register home/away lineup → chuyển gdLineupRegistration.jsp
 - Nhận lại từ doSaveLineup.jsp → hiện đội hình vừa đăng ký
@@ -490,7 +490,7 @@ classDiagram
 | 15 | gdSeasonSearch.jsp gọi gdRoundSearch.jsp |
 | 16 | gdRoundSearch.jsp hiển thị giao diện cho nhân viên |
 | 17 | Nhân viên BTC nhập "5", click nút btnSearch |
-| 18 | gdRoundSearch.jsp nhận searchKey từ request, đọc session lấy đối tượng season khớp seasonId từ param |
+| 18 | gdRoundSearch.jsp nhận searchKey từ request, đọc sessionContext lấy đối tượng season khớp mã season từ GET |
 | 19 | gdRoundSearch.jsp gọi lớp RoundDAO |
 | 20 | RoundDAO thực hiện hàm searchRound(season, searchKey) |
 | 21 | Hàm searchRound(season, searchKey) thực hiện và gọi lớp Round |
@@ -503,7 +503,7 @@ classDiagram
 | 28 | gdRoundSearch.jsp gọi gdMatchSearch.jsp |
 | 29 | gdMatchSearch.jsp hiển thị giao diện cho nhân viên |
 | 30 | Nhân viên BTC nhập "Hà Nội FC", click nút btnSearch |
-| 31 | gdMatchSearch.jsp nhận searchKey từ request, đọc session lấy đối tượng round khớp roundId từ param |
+| 31 | gdMatchSearch.jsp nhận searchKey từ request, đọc sessionContext lấy đối tượng round khớp mã round từ GET trong mùa đã chọn |
 | 32 | gdMatchSearch.jsp gọi lớp MatchDAO |
 | 33 | MatchDAO thực hiện hàm searchMatch(round, searchKey) |
 | 34 | Hàm searchMatch(round, searchKey) thực hiện và gọi lớp Match |
@@ -522,7 +522,7 @@ classDiagram
 | 47 | gdMatchSearch.jsp hiển thị danh sách kết quả cho nhân viên |
 | 48 | Nhân viên BTC click vào dòng trận đấu |
 | 49 | gdMatchSearch.jsp gọi gdMatchInfo.jsp |
-| 50 | gdMatchInfo.jsp đọc session lấy đối tượng match khớp matchId từ param |
+| 50 | gdMatchInfo.jsp đọc sessionContext lấy đối tượng match khớp mã match từ GET trong vòng đã chọn |
 | 51 | gdMatchInfo.jsp hiển thị thông tin trận và đội hình cho nhân viên |
 | 52 | Staff click nút register home/away lineup |
 | 53 | gdMatchInfo.jsp gọi gdLineupRegistration.jsp |
@@ -596,7 +596,7 @@ sequenceDiagram
     gdSS->>gdRS: Gọi gdRoundSearch.jsp
     gdRS-->>NV: Hiển thị giao diện cho nhân viên
     NV->>gdRS: Nhập "5" → click nút btnSearch
-    gdRS->>gdRS: Nhận searchKey từ request, đọc session lấy season khớp seasonId từ param
+    gdRS->>gdRS: Nhận searchKey từ request, đọc sessionContext lấy season khớp mã season từ GET
     gdRS->>rDAO: Gọi lớp RoundDAO
     rDAO->>rDAO: Thực hiện hàm searchRound(season, searchKey)
     rDAO->>r: Hàm searchRound(season, searchKey) gọi lớp Round
@@ -609,7 +609,7 @@ sequenceDiagram
     gdRS->>gdMS: Gọi gdMatchSearch.jsp
     gdMS-->>NV: Hiển thị giao diện cho nhân viên
     NV->>gdMS: Nhập "Hà Nội FC" → click nút btnSearch
-    gdMS->>gdMS: Nhận searchKey từ request, đọc session lấy round khớp roundId từ param
+    gdMS->>gdMS: Nhận searchKey từ request, đọc sessionContext lấy round khớp mã round từ GET trong mùa đã chọn
     gdMS->>mDAO: Gọi lớp MatchDAO
     mDAO->>mDAO: Thực hiện hàm searchMatch(round, searchKey)
     mDAO->>m: Hàm searchMatch(round, searchKey) gọi lớp Match
@@ -628,7 +628,7 @@ sequenceDiagram
     gdMS-->>NV: Hiển thị danh sách kết quả cho nhân viên
     NV->>gdMS: Click vào dòng trận đấu
     gdMS->>gdI: Gọi gdMatchInfo.jsp
-    gdI->>gdI: Đọc session lấy match khớp matchId từ param
+    gdI->>gdI: Đọc sessionContext lấy match khớp mã match từ GET trong vòng đã chọn
     gdI-->>NV: Hiển thị thông tin trận và đội hình cho nhân viên
     NV->>gdI: Click nút register home/away lineup
     gdI->>gdLR: Gọi gdLineupRegistration.jsp

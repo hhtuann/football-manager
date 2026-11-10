@@ -16,40 +16,22 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         String error = null;
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         try {
-            ctx.requireVersion(request);
-            if (ctx.tournament == null || LineupSession.id(request, "tournamentId") != ctx.tournament.getId()) {
-                throw new IllegalArgumentException("Giải đấu không hợp lệ.");
-            }
-            if (request.getParameter("roundId") != null) {
-                ctx.requireRound(request);
-            }
-            if (request.getParameter("matchId") != null) {
-                ctx.requireMatch(request);
-            }
-            ctx.requireOptionalSide(request);
-            int selectedId = LineupSession.id(request, "seasonId");
-            Season selected = null;
-            for (Season item : ctx.seasons) {
-                if (item.getId() == selectedId) {
-                    selected = item;
-                }
-            }
-            if (selected == null) {
-                throw new IllegalArgumentException("Mùa giải không thuộc kết quả tìm kiếm hiện tại.");
-            }
-            if (ctx.season != selected || !ctx.version().equals(LineupSession.single(request, "ready"))) {
-                ctx.clearRound();
-                ctx.season = selected;
-                ctx.rounds = new ArrayList<>();
-                ctx.changed();
-                ctx.rounds = new RoundDAO().searchRound(ctx.season, key);
-                response.sendRedirect(request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query() + "&ready=" + ctx.version() + "&key=" + java.net.URLEncoder.encode(key, java.nio.charset.StandardCharsets.UTF_8));
+            ctx.navigate(request, 1, SessionContext.single(request, "page").endsWith("-events"));
+            key = SessionContext.single(request, "key");
+            if (key == null) {
+                key = "";
+            } else if (key.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("round") + ("&" + ctx.query(1)));
                 return;
             }
+            ctx.clearRound();
+            ctx.rounds = new ArrayList<>();
+            ctx.rounds = new RoundDAO().searchRound(ctx.season, key);
+            ctx.changed();
         } catch (SQLException ex) {
             application.log("Lỗi tìm vòng đấu", ex);
             error = "Không thể tải vòng đấu. Vui lòng thử lại.";
@@ -59,7 +41,7 @@
         String title = "Tìm vòng đấu";
         request.setAttribute("breadcrumb", title);
         if (error == null) {
-            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}});
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("season") }});
         }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,23 +57,19 @@
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
     <a class="back-link"
-       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=<%= ctx.mode %>">« Quay lại</a>
+       href="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("season") %>">« Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <% } else { %>
     <a class="back-link"
-       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;<%= HTMLUtil.escape(ctx.query()) %>">«
+       href="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("season") %>">«
         Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <div class="search-toolbar">
         <form action="${pageContext.request.contextPath}/index.jsp" method="get">
-            <input type="hidden" name="page" value="round-search">
-            <input type="hidden" name="mode" value="<%= ctx.mode %>">
-            <input type="hidden" name="flow" value="<%= ctx.version() %>">
-            <input type="hidden" name="tournamentId" value="<%= ctx.tournament.getId() %>"><input type="hidden"
-                                                                                                  name="seasonId"
-                                                                                                  value="<%= ctx.season.getId() %>">
+            <input type="hidden" name="page" value="<%= ctx.searchPage("round") %>">
+            <input type="hidden" name="season" value="<%= SessionContext.seasonCode(ctx.season) %>">
             <label class="sr-only" for="key">Tìm kiếm vòng đấu</label><input type="text" id="key" name="key"
                                                                              value="<%= HTMLUtil.escape(key) %>"
                                                                              placeholder="Nhập mã hoặc tên vòng đấu...">
@@ -112,15 +90,15 @@
                 </thead>
                 <tbody>
                 <% for (Round item : ctx.rounds) { %>
-                <tr data-row-link="${pageContext.request.contextPath}/index.jsp?page=match-search&amp;<%= HTMLUtil.escape(ctx.query()) %>&amp;roundId=<%= item.getId() %>"
+                <tr data-row-link="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("match") %>&amp;<%= HTMLUtil.escape(ctx.query(1)) %>&amp;round=<%= item.getDisplayCode() %>"
                     tabindex="0" role="link">
                     <td><strong><%= HTMLUtil.escape(item.getDisplayCode()) %>
                     </strong></td>
                     <td><%= HTMLUtil.escape(item.getDisplayName()) %>
                     </td>
-                    <td><%= LineupSession.date(item.getStartTime() == null ? null : item.getStartTime().toLocalDate()) %>
+                    <td><%= SessionContext.date(item.getStartTime() == null ? null : item.getStartTime().toLocalDate()) %>
                     </td>
-                    <td><%= LineupSession.date(item.getEndTime() == null ? null : item.getEndTime().toLocalDate()) %>
+                    <td><%= SessionContext.date(item.getEndTime() == null ? null : item.getEndTime().toLocalDate()) %>
                     </td>
                     <td><%= HTMLUtil.escape(item.getStatus()) %>
                     </td>

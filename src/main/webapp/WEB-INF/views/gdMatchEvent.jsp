@@ -15,33 +15,10 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         String error = null;
         try {
-            ctx.requireRound(request);
-            if (!ctx.eventMode()) {
-                throw new IllegalArgumentException("Vui lòng mở chức năng cập nhật kết quả từ trang chủ.");
-            }
-            int selectedId = LineupSession.id(request, "matchId");
-            Match selected = null;
-            for (Match item : ctx.matches) {
-                if (item.getId() == selectedId) {
-                    selected = item;
-                }
-            }
-            if (selected == null) {
-                throw new IllegalArgumentException("Trận đấu không thuộc kết quả tìm kiếm hiện tại.");
-            }
-            ctx.requireOptionalSide(request);
-            if (ctx.match != selected) {
-                ctx.clearMatch();
-                ctx.match = selected;
-                ctx.changed();
-                ctx.cacheEventPlayers(currentSession);
-                response.sendRedirect(request.getContextPath() + "/index.jsp?page=match-event&" + ctx.query());
-                return;
-            }
-            ctx.requireEvents(request);
+            ctx.navigate(request, 3, true);
             ctx.cacheEventPlayers(currentSession);
             ctx.events = new EventDAO().getEventList(ctx.match.getId());
             ctx.match.setEvents(ctx.events);
@@ -55,7 +32,7 @@
         String title = "Sự kiện trận đấu";
         request.setAttribute("breadcrumb", title);
         if (error == null) {
-            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=match-search&" + ctx.query()}});
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("season") }, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("round") + "&" + ctx.query(1)}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("match") + "&" + ctx.query(2)}});
         }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,17 +46,17 @@
     <% if (error != null) { %>
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
-    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=events">« Tìm
+    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search-events">« Tìm
         lại mùa giải</a>
     <% } else { %>
     <a class="back-link"
-       href="${pageContext.request.contextPath}/index.jsp?page=match-search&amp;<%= HTMLUtil.escape(ctx.query()) %>">«
+       href="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("match") %>&amp;<%= HTMLUtil.escape(ctx.query(2)) %>">«
         Quay lại danh sách trận</a>
     <h2><%= title %> — <%= HTMLUtil.escape(ctx.match.getDisplayCode()) %>
     </h2>
-    <div class="match-summary"><p><strong>Thời gian:</strong> <%= LineupSession.dateTime(ctx.match.getKickoffTime()) %>
+    <div class="match-summary"><p><strong>Thời gian:</strong> <%= SessionContext.dateTime(ctx.match.getKickoffTime()) %>
     </p>
-        <p><strong>Trạng thái:</strong> <%= HTMLUtil.escape(LineupSession.status(ctx.match.getStatus())) %>
+        <p><strong>Trạng thái:</strong> <%= HTMLUtil.escape(SessionContext.status(ctx.match.getStatus())) %>
         </p></div>
     <div class="event-score" aria-label="Tỷ số trận đấu">
         <% for (String role : new String[]{"HOME", "AWAY"}) { %>
@@ -152,11 +129,11 @@
                     </td>
                     <td><%= HTMLUtil.escape(clubName) %>
                     </td>
-                    <td><%= HTMLUtil.escape(LineupSession.eventLabel(event)) %>
+                    <td><%= HTMLUtil.escape(SessionContext.eventLabel(event)) %>
                     </td>
-                    <td><%= HTMLUtil.escape(LineupSession.playerName(event.getPrimaryPlayer())) %>
+                    <td><%= HTMLUtil.escape(SessionContext.playerName(event.getPrimaryPlayer())) %>
                     </td>
-                    <td><%= HTMLUtil.escape(LineupSession.playerName(LineupSession.relatedPlayer(event))) %>
+                    <td><%= HTMLUtil.escape(SessionContext.playerName(SessionContext.relatedPlayer(event))) %>
                     </td>
                     <td><%= HTMLUtil.escape(event.getNote()) %>
                     </td>

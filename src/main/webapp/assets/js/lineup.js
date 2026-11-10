@@ -1,5 +1,9 @@
 'use strict';
 (() => {
+    const successMessage = document.querySelector('[data-lineup-success]');
+    if (successMessage) {
+        window.setTimeout(() => successMessage.remove(), 3000);
+    }
     for (const row of document.querySelectorAll('[data-row-link]')) {
         const navigate = () => window.location.assign(row.dataset.rowLink);
         row.addEventListener('click', (event) => {

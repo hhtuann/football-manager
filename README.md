@@ -146,7 +146,7 @@ Các ảnh CN1 dưới đây giữ từ bộ walkthrough cũ: tên/mã cầu th�
 3. Trang **Thông tin trận đấu** hiển thị thời gian, sân nhà, hai CLB và đội hình đã lưu.
 4. Chọn **Đăng ký / thay thế đội hình** ở đúng phía HOME hoặc AWAY.
 5. Với từng cầu thủ, chọn **Đá chính**, **Dự bị** hoặc không chọn; theo dõi bộ đếm và điều lệ trên màn hình.
-6. Lưu → quay về thông tin trận. Làm tương tự cho bên còn lại; lưu một bên không thay đội hình bên kia.
+6. Lưu → quay về thông tin trận; thông báo thành công tự ẩn sau 3 giây khi JavaScript hoạt động. Làm tương tự cho bên còn lại; lưu một bên không thay đội hình bên kia.
 7. Tìm lại trận từ đầu để xem dữ liệu đã lưu. Khi báo ngữ cảnh/form cũ, quay về tìm trận thay vì gửi lại tab cũ.
 
 ### Luồng demo bằng hình ảnh
@@ -236,7 +236,7 @@ Các ảnh CN2/CN3 được chụp từ ứng dụng đang chạy ngày 10/11/20
 - **Không có sửa/xóa sự kiện hoặc mở lại trận.** Thêm sự kiện/kết thúc là ghi dữ liệu thật; chỉ chốt trận khi thực sự muốn khóa kết quả.
 - Để xem mẫu mà không ghi dữ liệu, mở `R01-T01` (dataset có tỷ số 3–1 và nhiều loại sự kiện) hoặc `R01-T02` (0–0); cả hai đã kết thúc.
 
-CN2/CN3 dùng session `currentUser`, đối chiếu flow/ID ngữ cảnh, kiểm tra Staff và CSRF tại POST. Đổi chức năng/mùa/vòng/trận có thể làm tab cũ hết hiệu lực. Thiếu/hết session cần đăng nhập và tìm lại ngữ cảnh.
+CN2/CN3 dùng chung `SessionContext` dưới khóa session `sessionContext`; `currentUser` vẫn là nguồn xác thực duy nhất. URL GET dùng mã dễ đọc, ví dụ `/index.jsp?page=match-event&season=VLE2026&round=R07&match=T01`, không đưa UUID `flow`, `ready` hoặc ID nội bộ lên thanh địa chỉ. Mã được đối chiếu theo mùa → vòng → trận trong kết quả đã tải; mã không tồn tại hoặc không duy nhất bị từ chối. POST vẫn mang CSRF, phiên bản flow và ID thực trong hidden input; tab cũ bị từ chối sau khi ngữ cảnh thay đổi. Thiếu/hết session cần đăng nhập và tìm lại ngữ cảnh.
 
 ## 8. Dữ liệu và cấu trúc dự án
 
@@ -244,7 +244,7 @@ Dataset có **1 giải, 5 mùa, 14 CLB, 316 cầu thủ, 26 vòng và 182 trận
 
 Tên CLB, hồ sơ và cặp đấu dựa nguồn [VPF](https://vpf.vn/season/v-league-2027/?action=calendar&pagejs=1); ngày đã dịch theo lịch demo. Đội hình, diễn biến và Rule phục vụ demo, không phải biên bản VPF đã xác minh. Lần refresh trước chỉ 4/387 request hồ sơ trả HTTP 200; không tuyên bố xác minh trực tiếp toàn bộ 316 hồ sơ. Repo không còn file bằng chứng nguồn chi tiết.
 
-`rounds.number` dương và duy nhất theo mùa, độc lập tên vòng. Mã `R07-T01` dùng số vòng và thứ tự ID trận trong toàn vòng trước lọc, không theo kickoff; URL/session/FK vẫn dùng ID. Thời gian chưa xác định có thể NULL; CN2 khóa lưu khi kickoff NULL.
+`rounds.number` dương và duy nhất theo mùa, độc lập tên vòng. Mã hiển thị `R07-T01` dùng số vòng và thứ tự ID trận trong toàn vòng trước lọc, không theo kickoff. URL GET dùng `season=VLE2026&round=R07&match=T01`; model, POST và FK vẫn dùng ID thực. Các mã URL không thay thế khóa database. Thời gian chưa xác định có thể NULL; CN2 khóa lưu khi kickoff NULL.
 
 | Đường dẫn | Vai trò |
 |---|---|
@@ -320,6 +320,14 @@ docker compose up -d --wait
 - Đã khởi động Docker Desktop và build/recreate web; Compose báo PostgreSQL và web healthy.
 - Browser đăng nhập Staff, mở CN1 với 316 dòng cầu thủ; đi luồng CN2 đến `R07-T01`; đi luồng CN3 đến `R01-T01`, đọc tỷ số 3–1 và trạng thái khóa FINISHED.
 - Chỉ kiểm tra đọc dữ liệu; không reset database, không thêm/xóa cầu thủ, thay đội hình hoặc ghi/chốt trận trong lần chạy này.
+
+### Kiểm chứng SessionContext và URL ngắn ngày 10/11/2026
+
+- `mvnw.cmd package` đạt 52 tests, không failures/errors/skipped: 46 PostgreSQL tests và 6 tests điều hướng/session. Đã build WAR/image và recreate runtime 8088 healthy; cần đăng nhập lại để bỏ context cũ.
+- CN2 dùng `page=season-search`, `round-search`, `match-search`; CN3 dùng các route tìm kiếm tương ứng có hậu tố `-events`, vẫn render cùng JSP. Hai trang cuối dùng `page=match-info` / `match-event` và `season=VLE2026&round=R07&match=T01`; form đội hình thêm `side=HOME` hoặc `AWAY`. Không còn UUID/ready/ID nội bộ trên GET URL; tìm kiếm rỗng bỏ `key=`.
+- Browser trên database bản sao `football_session_smoke_20261110`/web 8089 đã lưu đội hình, kiểm tra lỗi thiếu 11 chính giữ lựa chọn, thêm bàn thắng, kết thúc và reload tỷ số 1–0. Thiếu CSRF bị 403, POST sự kiện cũ bị 400, form đội hình cũ báo lỗi ngữ cảnh. Giả lập truy vấn vòng lỗi trên database cô lập xác nhận không tái sử dụng kết quả con của mùa trước.
+- Runtime 8088 chỉ kiểm tra đọc CN2/CN3 với URL mới; trận R07-T01 vẫn SCHEDULED 0–0. Manager/Player/User bị 403 ở route mới và ba POST; CN1 tìm cầu thủ và logout hoạt động. Không đổi dữ liệu nghiệp vụ runtime, không chạy migration/reset. Web smoke 8089 đã dừng.
+
 
 ### Quy ước phát triển
 

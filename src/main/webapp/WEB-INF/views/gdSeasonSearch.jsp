@@ -15,38 +15,23 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         String error = null;
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         try {
-            ctx.selectMode(request);
-            if (request.getParameter("flow") != null) {
-                ctx.requireVersion(request);
-                if (ctx.tournament == null || LineupSession.id(request, "tournamentId") != ctx.tournament.getId()) {
-                    throw new IllegalArgumentException("Giải đấu không thuộc ngữ cảnh hiện tại.");
-                }
-                if (request.getParameter("seasonId") != null) {
-                    ctx.requireSeason(request);
-                }
-                if (request.getParameter("roundId") != null) {
-                    ctx.requireRound(request);
-                }
-                if (request.getParameter("matchId") != null) {
-                    ctx.requireMatch(request);
-                }
-                ctx.requireOptionalSide(request);
-            } else if (request.getParameter("tournamentId") != null || request.getParameter("seasonId") != null || request.getParameter("roundId") != null || request.getParameter("matchId") != null || request.getParameter("matchClubId") != null) {
-                throw new IllegalArgumentException("Thiếu phiên điều hướng. Vui lòng chọn lại mùa giải.");
-            }
-            if (!ctx.version().equals(LineupSession.single(request, "ready"))) {
-                ctx.clearSeason();
-                ctx.changed();
-                ctx.seasons = new ArrayList<>();
-                ctx.tournament = new TournamentDAO().getTournament();
-                ctx.seasons = new SeasonDAO().searchSeason(ctx.tournament, key);
-                response.sendRedirect(request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query() + "&ready=" + ctx.version() + "&key=" + java.net.URLEncoder.encode(key, java.nio.charset.StandardCharsets.UTF_8));
+            ctx.navigate(request, 0, SessionContext.single(request, "page").endsWith("-events"));
+            key = SessionContext.single(request, "key");
+            if (key == null) {
+                key = "";
+            } else if (key.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("season") + "");
                 return;
             }
+            ctx.clearSeason();
+            ctx.seasons = new ArrayList<>();
+            ctx.tournament = new TournamentDAO().getTournament();
+            ctx.seasons = new SeasonDAO().searchSeason(ctx.tournament, key);
+            ctx.changed();
         } catch (SQLException ex) {
             application.log("Lỗi tìm mùa giải", ex);
             error = "Không thể tải mùa giải. Vui lòng thử lại.";
@@ -72,21 +57,16 @@
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
     <a class="back-link"
-       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=<%= ctx.mode %>">« Quay lại</a>
+       href="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("season") %>">« Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <% } else { %>
     <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=home">« Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
-    <p><%= HTMLUtil.escape(ctx.tournament.getName()) %>
-    </p>
     <div class="search-toolbar">
         <form action="${pageContext.request.contextPath}/index.jsp" method="get">
-            <input type="hidden" name="page" value="season-search">
-            <input type="hidden" name="mode" value="<%= ctx.mode %>">
-            <input type="hidden" name="flow" value="<%= ctx.version() %>">
-            <input type="hidden" name="tournamentId" value="<%= ctx.tournament.getId() %>">
+            <input type="hidden" name="page" value="<%= ctx.searchPage("season") %>">
             <label class="sr-only" for="key">Tìm kiếm mùa giải</label><input type="text" id="key" name="key"
                                                                              value="<%= HTMLUtil.escape(key) %>"
                                                                              placeholder="Nhập tên, năm hoặc trạng thái mùa giải...">
@@ -105,7 +85,7 @@
                 </thead>
                 <tbody>
                 <% for (Season item : ctx.seasons) { %>
-                <tr data-row-link="${pageContext.request.contextPath}/index.jsp?page=round-search&amp;<%= HTMLUtil.escape(ctx.query()) %>&amp;seasonId=<%= item.getId() %>"
+                <tr data-row-link="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("round") %>&amp;season=VLE<%= item.getYear() %>"
                     tabindex="0" role="link">
                     <td><strong>VLE<%= item.getYear() %>
                     </strong></td>

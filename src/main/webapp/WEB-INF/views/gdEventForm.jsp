@@ -15,23 +15,18 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         String error = null;
-        Map<String, String> inputs = new LinkedHashMap<>(ctx.eventInputs);
-        ctx.eventInputs.clear();
-        String validation = ctx.eventError;
-        ctx.eventError = null;
+        Map<String, String> inputs = new LinkedHashMap<>();
+        String validation = null;
         try {
-            ctx.requireEvents(request);
-            ctx.requireOptionalSide(request);
+            ctx.navigate(request, 3, true);
+            inputs.putAll(ctx.eventInputs);
+            ctx.eventInputs.clear();
+            validation = ctx.eventError;
+            ctx.eventError = null;
             ctx.cacheEventPlayers(currentSession);
             new EventDAO().refreshMatch(ctx.match);
-            for (String name : new String[]{"matchClubId", "eventType", "minute", "extraMinute", "primaryPlayerId", "secondaryPlayerId", "note"}) {
-                String value = LineupSession.single(request, name);
-                if (value != null) {
-                    inputs.put(name, value);
-                }
-            }
         } catch (SQLException ex) {
             application.log("Lỗi tải trạng thái trận đấu", ex);
             error = "Không thể tải trạng thái trận đấu. Vui lòng thử lại.";
@@ -56,7 +51,7 @@
     <% if (error != null) { %>
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
-    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=events">« Tìm
+    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search-events">« Tìm
         lại mùa giải</a>
     <% } else { %>
     <a class="back-link"
@@ -110,8 +105,8 @@
                     value="<%= player.getId() %>"
                 <%= primaryId.equals(String.valueOf(player.getId())) ? "selected" : "" %>
                 <%= selectedSide.equals(String.valueOf(club.getId())) ? "" : "hidden disabled" %>>
-                <%= HTMLUtil.escape(LineupSession.playerName(player)) %>
-                — <%= HTMLUtil.escape(LineupSession.role(player.getRole())) %>
+                <%= HTMLUtil.escape(SessionContext.playerName(player)) %>
+                — <%= HTMLUtil.escape(SessionContext.role(player.getRole())) %>
             </option>
             <% } %>
             <% } %>
@@ -131,8 +126,8 @@
                         value="<%= player.getId() %>"
                     <%= inputs.getOrDefault("secondaryPlayerId", "").equals(String.valueOf(player.getId())) ? "selected" : "" %>
                     <%= available ? "" : "hidden disabled" %>>
-                    <%= HTMLUtil.escape(LineupSession.playerName(player)) %>
-                    — <%= HTMLUtil.escape(LineupSession.role(player.getRole())) %>
+                    <%= HTMLUtil.escape(SessionContext.playerName(player)) %>
+                    — <%= HTMLUtil.escape(SessionContext.role(player.getRole())) %>
                 </option>
                 <% } %>
                 <% } %>

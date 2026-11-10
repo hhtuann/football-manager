@@ -6,10 +6,10 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
 
 > **Phạm vi dữ liệu demo 08/11/2026:** 1 Tournament, 5 Season, 14 CLB, 26 vòng/182 trận mùa chính. Cặp đấu/hồ sơ dựa nguồn VPF; lịch dịch quanh ngày seed, đội hình/diễn biến phục vụ demo không phải biên bản lịch sử đã xác minh. Nguồn/khác biệt lưu ngoài database, không metadata mô phỏng; mọi thẻ đều tính treo giò. CN3 không yêu cầu reset hoặc đổi schema. Ngày chưa xác định vẫn nullable.
 
-> **Contract mô hình cập nhật 10/11/2026:** giữ `seasons.name`, đồ thị một chiều và kế thừa Event; `Round.number` lưu tại `rounds.number`, độc lập tên. Mã vòng/trận hiển thị dùng số vòng và thứ tự ID trận, không thay ID trong URL/session/FK. Điều hướng dùng chung CN2 với `mode=events`; đổi mode hoặc mùa/vòng/trận vô hiệu hóa ngữ cảnh cũ.
+> **Contract mô hình cập nhật 10/11/2026:** giữ `seasons.name`, đồ thị một chiều và kế thừa Event; `Round.number` lưu tại `rounds.number`, độc lập tên. UI giữ mã đầy đủ `R07-T01`, dùng số vòng và thứ tự ID trận trong toàn vòng trước khi lọc. Điều hướng CN2/CN3 dùng chung `SessionContext` (session key `sessionContext`), thay `LineupSession`, không thêm model/service. GET dùng `index.jsp?page=match-event&season=VLE2026&round=R07&match=T01`, phân giải mã từ kết quả đã tải trong session, không dùng `mode=events` trên GET; đổi chức năng hoặc mùa/vòng/trận vô hiệu hóa ngữ cảnh cũ. POST giữ hidden ID thật, flow và CSRF; khóa chính/FK CSDL không đổi.
 
 
-> Danh tính đăng nhập kế thừa CN1 là session `currentUser: User` qua `UserDAO`, không phải session `staff`. Các tham số ID chỉ chọn đối tượng trong ngữ cảnh đã tải, không tạo đối tượng tin cậy trực tiếp từ request.
+> Danh tính đăng nhập kế thừa CN1 là session `currentUser: User` qua `UserDAO`, không phải session `staff`, không đổi khi dùng `sessionContext`. Mã trên GET chỉ chọn đối tượng từ kết quả đã tải trong ngữ cảnh session; hidden ID trên POST phải khớp ngữ cảnh, không tạo đối tượng tin cậy trực tiếp từ request.
 
 > **Quy tắc cài đặt:** chỉ nhận SCHEDULED/ONGOING với hai đội hình đủ 11 chính/có thủ môn và quota hợp lệ; sự kiện đầu tiên chuyển ONGOING, kết thúc chuyển FINISHED (0–0 hợp lệ). Không thêm action bắt đầu hoặc giới hạn kickoff chưa được báo cáo quy định. Phút/bù giờ là số nguyên không âm, ghi chú tối đa255 ký tự. Replay toàn bộ timeline theo phút/bù giờ/ID để chặn actor đã ra sân/thẻ đỏ, cầu thủ dự bị chưa vào, thay người quá Rule.maxSubstitutions hoặc vào lại. Hai vàng không tự sinh đỏ. Thêm lùi thời điểm không được làm sai sự kiện phía sau.
 >
@@ -41,7 +41,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
   - chooseRound: link
 - Thuộc tính ẩn:
   - currentUser: User
-  - season: Season (đọc session khớp seasonId từ param)
+  - season: Season (đọc sessionContext, khớp mã season từ GET với kết quả mùa đã tải)
   - listRound: Round[]
 - Submit về chính trang này (action: self): nhận searchKey từ param + đọc session lấy season, gọi RoundDAO thực hiện searchRound(season, key).
 
@@ -53,7 +53,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
   - chooseMatch: link
 - Thuộc tính ẩn:
   - currentUser: User
-  - round: Round (đọc session khớp roundId từ param)
+  - round: Round (đọc sessionContext, khớp mã round từ GET trong mùa đã chọn)
   - listMatch: Match[]
 - Submit về chính trang này (action: self): nhận searchKey từ param + đọc session lấy round, gọi MatchDAO thực hiện searchMatch(round, key) — hàm tải trọn chuỗi ◆ (MatchPlayer → MatchClub → Match), lưu listMatch vào session.
 
@@ -67,7 +67,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
   - btnEndMatch: submit
 - Thuộc tính ẩn:
   - currentUser: User
-  - match: Match (đọc session khớp matchId từ param — đã chứa đầy đủ matchClubs + matchPlayers từ searchMatch)
+  - match: Match (đọc sessionContext, khớp mã match từ GET trong vòng đã chọn — đã chứa đầy đủ matchClubs + matchPlayers từ searchMatch)
   - listEvent: Event[]
   - listPlayerHome: MatchPlayer[] (truy xuất từ match, lưu vào session cho gdEventForm)
   - listPlayerAway: MatchPlayer[] (truy xuất từ match, lưu vào session cho gdEventForm)
@@ -437,7 +437,7 @@ classDiagram
 - (giống Chức năng 2)
 
 **gdMatchEvent.jsp**
-- Đọc session lấy đối tượng match khớp matchId từ param
+- Đọc sessionContext lấy đối tượng match khớp mã match từ GET trong vòng đã chọn
 - Gọi EventDAO thực hiện getEventList() — lấy danh sách sự kiện của trận đấu
 - Hiện tỉ số và danh sách sự kiện cho nhân viên
 - Nhân viên click nút addEvent → chuyển gdEventForm.jsp
@@ -459,7 +459,7 @@ classDiagram
 - Hiển thị sự kiện mới và tỉ số cập nhật nếu thành công / thông báo lỗi nếu không thành công
 
 **doEndMatch.jsp**
-- Đọc session lấy đối tượng match khớp matchId từ param
+- Đọc sessionContext lấy đối tượng match, đối chiếu hidden matchId/ID ngữ cảnh, flow và CSRF từ POST
 - Gọi MatchDAO thực hiện saveMatch() — lưu trạng thái kết thúc trận
 - Chuyển về gdMatchEvent.jsp (khóa khung, không cho thêm sự kiện nữa)
 - Hiển thị kết quả cuối cùng của trận đấu
@@ -491,7 +491,7 @@ classDiagram
 | 15 | gdSeasonSearch.jsp gọi gdRoundSearch.jsp |
 | 16 | gdRoundSearch.jsp hiển thị giao diện cho nhân viên |
 | 17 | Nhân viên BTC nhập "5", click nút btnSearch |
-| 18 | gdRoundSearch.jsp nhận searchKey từ request, đọc session lấy đối tượng season khớp seasonId từ param |
+| 18 | gdRoundSearch.jsp nhận searchKey từ request, đọc sessionContext lấy đối tượng season khớp mã season từ GET |
 | 19 | gdRoundSearch.jsp gọi lớp RoundDAO |
 | 20 | RoundDAO thực hiện hàm searchRound(season, searchKey) |
 | 21 | Hàm searchRound(season, searchKey) thực hiện và gọi lớp Round |
@@ -504,7 +504,7 @@ classDiagram
 | 28 | gdRoundSearch.jsp gọi gdMatchSearch.jsp |
 | 29 | gdMatchSearch.jsp hiển thị giao diện cho nhân viên |
 | 30 | Nhân viên BTC nhập "Hà Nội FC", click nút btnSearch |
-| 31 | gdMatchSearch.jsp nhận searchKey từ request, đọc session lấy đối tượng round khớp roundId từ param |
+| 31 | gdMatchSearch.jsp nhận searchKey từ request, đọc sessionContext lấy đối tượng round khớp mã round từ GET trong mùa đã chọn |
 | 32 | gdMatchSearch.jsp gọi lớp MatchDAO |
 | 33 | MatchDAO thực hiện hàm searchMatch(round, searchKey) |
 | 34 | Hàm searchMatch(round, searchKey) thực hiện và gọi lớp Match |
@@ -523,7 +523,7 @@ classDiagram
 | 47 | gdMatchSearch.jsp hiển thị danh sách kết quả cho nhân viên |
 | 48 | Nhân viên BTC click vào dòng trận đấu |
 | 49 | gdMatchSearch.jsp gọi gdMatchEvent.jsp |
-| 50 | gdMatchEvent.jsp đọc session lấy đối tượng match khớp matchId từ param |
+| 50 | gdMatchEvent.jsp đọc sessionContext lấy đối tượng match khớp mã match từ GET trong vòng đã chọn |
 | 51 | gdMatchEvent.jsp gọi lớp EventDAO |
 | 52 | EventDAO thực hiện hàm getEventList() |
 | 53 | Hàm getEventList() thực hiện và gọi lớp Event |
@@ -553,7 +553,7 @@ classDiagram
 | 77 | gdMatchEvent.jsp hiển thị sự kiện mới và tỉ số cập nhật cho nhân viên |
 | 78 | Nhân viên BTC click nút btnEndMatch |
 | 79 | gdMatchEvent.jsp gọi doEndMatch.jsp |
-| 80 | doEndMatch.jsp đọc session lấy đối tượng match khớp matchId từ param |
+| 80 | doEndMatch.jsp đọc sessionContext lấy đối tượng match, đối chiếu hidden matchId/ID ngữ cảnh, flow và CSRF từ POST |
 | 81 | doEndMatch.jsp gọi lớp MatchDAO |
 | 82 | MatchDAO thực hiện hàm saveMatch() |
 | 83 | Hàm saveMatch() trả kết quả cho doEndMatch.jsp |
@@ -605,7 +605,7 @@ sequenceDiagram
     gdSS->>gdRS: Gọi gdRoundSearch.jsp
     gdRS-->>NV: Hiển thị giao diện cho nhân viên
     NV->>gdRS: Nhập "5" → click nút btnSearch
-    gdRS->>gdRS: Nhận searchKey từ request, đọc session lấy season khớp seasonId từ param
+    gdRS->>gdRS: Nhận searchKey từ request, đọc sessionContext lấy season khớp mã season từ GET
     gdRS->>rDAO: Gọi lớp RoundDAO
     rDAO->>rDAO: Thực hiện hàm searchRound(season, searchKey)
     rDAO->>r: Hàm searchRound(season, searchKey) gọi lớp Round
@@ -618,7 +618,7 @@ sequenceDiagram
     gdRS->>gdMS: Gọi gdMatchSearch.jsp
     gdMS-->>NV: Hiển thị giao diện cho nhân viên
     NV->>gdMS: Nhập "Hà Nội FC" → click nút btnSearch
-    gdMS->>gdMS: Nhận searchKey từ request, đọc session lấy round khớp roundId từ param
+    gdMS->>gdMS: Nhận searchKey từ request, đọc sessionContext lấy round khớp mã round từ GET trong mùa đã chọn
     gdMS->>mDAO: Gọi lớp MatchDAO
     mDAO->>mDAO: Thực hiện hàm searchMatch(round, searchKey)
     mDAO->>m: Hàm searchMatch(round, searchKey) gọi lớp Match
@@ -637,7 +637,7 @@ sequenceDiagram
     gdMS-->>NV: Hiển thị danh sách kết quả cho nhân viên
     NV->>gdMS: Click vào dòng trận đấu
     gdMS->>gdE: Gọi gdMatchEvent.jsp
-    gdE->>gdE: Đọc session lấy match khớp matchId từ param
+    gdE->>gdE: Đọc sessionContext lấy match khớp mã match từ GET trong vòng đã chọn
     gdE->>eDAO: Gọi lớp EventDAO
     eDAO->>eDAO: Thực hiện hàm getEventList()
     eDAO->>e: Hàm getEventList() gọi lớp Event
@@ -667,7 +667,7 @@ sequenceDiagram
     gdE-->>NV: Hiển thị sự kiện mới và tỉ số cập nhật cho nhân viên
     NV->>gdE: Click nút btnEndMatch
     gdE->>doEM: Gọi doEndMatch.jsp
-    doEM->>doEM: Đọc session lấy match khớp matchId từ param
+    doEM->>doEM: Đọc sessionContext lấy match, đối chiếu hidden matchId và ID ngữ cảnh, flow, CSRF từ POST
     doEM->>mDAO: Gọi lớp MatchDAO
     mDAO->>mDAO: Thực hiện hàm saveMatch()
     mDAO-->>doEM: Trả kết quả

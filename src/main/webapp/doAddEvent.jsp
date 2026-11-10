@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
 <%@ page import="com.footballmanager.model.*" %>
 <%@ page import="com.footballmanager.dao.EventDAO" %>
-<%@ page import="com.footballmanager.util.LineupSession" %>
+<%@ page import="com.footballmanager.util.SessionContext" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.sql.SQLException" %>
@@ -21,7 +21,7 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         try {
             ctx.requireCsrf(request);
             ctx.requireEvents(request);
@@ -47,9 +47,9 @@
                 if (!permitted.contains(name)) {
                     throw new IllegalArgumentException("Biểu mẫu chứa tham số không hợp lệ.");
                 }
-                LineupSession.single(request, name);
+                SessionContext.single(request, name);
             }
-            if ("true".equals(LineupSession.single(request, "preview"))) {
+            if ("true".equals(SessionContext.single(request, "preview"))) {
                 ctx.eventError = null;
                 response.sendRedirect(request.getContextPath() + "/index.jsp?page=event-form&" + ctx.query());
                 return;
@@ -58,10 +58,10 @@
                 throw new IllegalArgumentException("Trận đấu đã kết thúc; không thể thêm sự kiện.");
             }
             ctx.cacheEventPlayers(currentSession);
-            MatchClub side = ctx.eventSide(LineupSession.id(request, "matchClubId"));
-            MatchPlayer actor = LineupSession.eventPlayer(ctx.eventPlayers(side), LineupSession.id(request, "primaryPlayerId"));
-            String type = LineupSession.single(request, "eventType");
-            String relatedId = LineupSession.single(request, "secondaryPlayerId");
+            MatchClub side = ctx.eventSide(SessionContext.id(request, "matchClubId"));
+            MatchPlayer actor = SessionContext.eventPlayer(ctx.eventPlayers(side), SessionContext.id(request, "primaryPlayerId"));
+            String type = SessionContext.single(request, "eventType");
+            String relatedId = SessionContext.single(request, "secondaryPlayerId");
             MatchPlayer related = null;
             if (relatedId != null && !relatedId.isEmpty()) {
                 List<MatchPlayer> choices = new ArrayList<>();
@@ -70,7 +70,7 @@
                         choices.addAll(ctx.eventPlayers(club));
                     }
                 }
-                related = LineupSession.eventPlayer(choices, LineupSession.id(request, "secondaryPlayerId"));
+                related = SessionContext.eventPlayer(choices, SessionContext.id(request, "secondaryPlayerId"));
                 if (related.getId() == actor.getId()) {
                     throw new IllegalArgumentException("Cầu thủ liên quan phải khác cầu thủ chính.");
                 }
@@ -108,8 +108,8 @@
             }
             int minute, extra;
             try {
-                minute = Integer.parseInt(LineupSession.single(request, "minute"));
-                extra = Integer.parseInt(LineupSession.single(request, "extraMinute"));
+                minute = Integer.parseInt(SessionContext.single(request, "minute"));
+                extra = Integer.parseInt(SessionContext.single(request, "extraMinute"));
             } catch (NumberFormatException ex) {
                 throw new IllegalArgumentException("Phút thi đấu và phút bù giờ phải là số nguyên không âm.");
             }
@@ -119,7 +119,7 @@
             event.setPrimaryPlayer(actor);
             event.setMinute(minute);
             event.setExtraMinute(extra);
-            event.setNote(LineupSession.single(request, "note"));
+            event.setNote(SessionContext.single(request, "note"));
             if (!new EventDAO().addEvent(ctx.match, event)) {
                 throw new IllegalArgumentException("Không thể lưu sự kiện. Vui lòng kiểm tra trạng thái trận và đội hình hiện tại.");
             }

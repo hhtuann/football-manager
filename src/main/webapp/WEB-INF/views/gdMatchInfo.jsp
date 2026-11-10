@@ -15,36 +15,18 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         String error = null;
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         try {
-            ctx.requireRound(request);
-            int selectedId = LineupSession.id(request, "matchId");
-            Match selected = null;
-            for (Match item : ctx.matches) {
-                if (item.getId() == selectedId) {
-                    selected = item;
-                }
-            }
-            if (selected == null) {
-                throw new IllegalArgumentException("Trận đấu không thuộc kết quả tìm kiếm hiện tại.");
-            }
-            ctx.requireOptionalSide(request);
-            if (ctx.match != selected) {
-                ctx.clearMatch();
-                ctx.match = selected;
-                ctx.changed();
-                response.sendRedirect(request.getContextPath() + "/index.jsp?page=match-info&" + ctx.query());
-                return;
-            }
+            ctx.navigate(request, 3, false);
         } catch (IllegalArgumentException ex) {
             error = ex.getMessage();
         }
         String title = "Thông tin trận đấu";
         request.setAttribute("breadcrumb", title);
         if (error == null) {
-            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=match-search&" + ctx.query()}});
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("season") }, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("round") + "&" + ctx.query(1)}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("match") + "&" + ctx.query(2)}});
         }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,7 +34,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/common.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/search.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lineup.css?v=20261105-2">
-<script src="${pageContext.request.contextPath}/assets/js/lineup.js?v=20261105-2" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/lineup.js?v=20261110-flash" defer></script>
 </head><body class="search-page">
 <%@ include file="fragments/topbar.jspf" %>
 <main class="search-content lineup-content">
@@ -64,15 +46,15 @@
     </h2>
     <% } else { %>
     <a class="back-link"
-       href="${pageContext.request.contextPath}/index.jsp?page=match-search&amp;<%= HTMLUtil.escape(ctx.query()) %>">«
+       href="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.searchPage("match") %>&amp;<%= HTMLUtil.escape(ctx.query(2)) %>">«
         Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
-    <div class="match-summary"><p><strong>Thời gian:</strong> <%= LineupSession.dateTime(ctx.match.getKickoffTime()) %>
+    <div class="match-summary"><p><strong>Thời gian:</strong> <%= SessionContext.dateTime(ctx.match.getKickoffTime()) %>
     </p>
         <p><strong>Mã trận:</strong> <%= HTMLUtil.escape(ctx.match.getDisplayCode()) %>
         </p>
-        <p><strong>Trạng thái:</strong> <%= HTMLUtil.escape(LineupSession.status(ctx.match.getStatus())) %>
+        <p><strong>Trạng thái:</strong> <%= HTMLUtil.escape(SessionContext.status(ctx.match.getStatus())) %>
         </p>
         <% for (MatchClub home : ctx.match.getMatchClubs()) {
             if ("HOME".equals(home.getRole())) { %><p>
@@ -80,7 +62,7 @@
         </p><% }
         } %></div>
     <% if (ctx.flash != null) { %>
-    <div class="success-box" role="status"><%= HTMLUtil.escape(ctx.flash) %>
+    <div class="success-box" role="status" data-lineup-success><%= HTMLUtil.escape(ctx.flash) %>
     </div>
     <% ctx.flash = null;
     } %>
@@ -88,7 +70,7 @@
     giờ bắt đầu xác định trong tương lai và chưa có sự kiện.</p><% } %>
     <div class="lineup-sides">
         <% for (MatchClub side : ctx.match.getMatchClubs()) { %>
-        <section class="lineup-panel"><h3><%= HTMLUtil.escape(side.getClub().getShortName()) %>
+        <section class="lineup-panel"><h3><%= HTMLUtil.escape(side.getClub().getFullName()) %>
             — <%= "HOME".equals(side.getRole()) ? "đội nhà" : "đội khách" %>
         </h3>
             <p>Đã đăng kí: <%= side.getMatchPlayers().size() %> cầu thủ</p>
@@ -115,7 +97,7 @@
                             </td>
                             <td><%= HTMLUtil.escape(player.getClubPlayer().getPlayer().getPrimaryPosition()) %>
                             </td>
-                            <td><%= HTMLUtil.escape(LineupSession.role(player.getRole())) %>
+                            <td><%= HTMLUtil.escape(SessionContext.role(player.getRole())) %>
                             </td>
                         </tr>
                         <% } %>
@@ -123,9 +105,8 @@
                     </table>
                 </div>
             </div>
-            <% if (side.getMatchPlayers().isEmpty()) { %><p class="empty-state">Chưa đăng ký đội hình.</p><% } %>
             <a class="lineup-button secondary"
-               href="${pageContext.request.contextPath}/index.jsp?page=lineup-registration&amp;<%= HTMLUtil.escape(ctx.query()) %>&amp;matchClubId=<%= side.getId() %>"><%= ctx.locked() ? "Xem danh sách cầu thủ" : "Đăng ký / thay thế đội hình" %>
+               href="${pageContext.request.contextPath}/index.jsp?page=lineup-registration&amp;<%= HTMLUtil.escape(ctx.query()) %>&amp;side=<%= side.getRole() %>"><%= ctx.locked() ? "Xem danh sách cầu thủ" : "Đăng ký / thay thế đội hình" %>
             </a>
         </section>
         <% } %></div>

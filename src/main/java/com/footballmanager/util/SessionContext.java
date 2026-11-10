@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Session-only navigation cache. Call while holding the HttpSession monitor.
  */
-public final class LineupSession {
+public final class SessionContext {
     public Tournament tournament;
     public List<Season> seasons = new ArrayList<>();
     public Season season;
@@ -35,22 +35,112 @@ public final class LineupSession {
         return "events".equals(mode);
     }
 
-    public void selectMode(HttpServletRequest request) {
-        String selected = single(request, "mode");
-        if (selected == null) {
-            selected = "lineup";
-        }
-        if (!"lineup".equals(selected) && !"events".equals(selected)) {
-            throw new IllegalArgumentException("Chức năng điều hướng không hợp lệ.");
-        }
-        if (request.getParameter("flow") != null) {
-            if (!mode.equals(selected)) {
-                throw new IllegalArgumentException("Chức năng đã thay đổi. Vui lòng chọn lại mùa giải.");
-            }
-        } else if (!mode.equals(selected)) {
-            clearSeason();
-            seasons = new ArrayList<>();
+    public String searchPage(String level) {
+        return level + "-search" + (eventMode() ? "-events" : "");
+    }
+
+    public void selectMode(boolean eventsMode) {
+        String selected = eventsMode ? "events" : "lineup";
+        if (!mode.equals(selected)) {
             mode = selected;
+            side = null;
+            players = new ArrayList<>();
+            eventInputs.clear();
+            eventError = null;
+            changed();
+        }
+    }
+
+    public static String seasonCode(Season value) {
+        return "VLE" + value.getYear();
+    }
+
+    public static String matchCode(Match value) {
+        return value.getMatchNumber() == null ? "" : String.format("T%02d", value.getMatchNumber());
+    }
+
+    private static String code(HttpServletRequest request, String name, String pattern) {
+        String value = single(request, name);
+        if (value == null || !value.matches(pattern)) {
+            throw new IllegalArgumentException("Mã điều hướng không hợp lệ: " + name);
+        }
+        return value;
+    }
+
+    private static <T> T unique(List<T> values, java.util.function.Predicate<T> predicate) {
+        T selected = null;
+        for (T value : values) {
+            if (predicate.test(value)) {
+                if (selected != null) {
+                    throw new IllegalArgumentException("Mã điều hướng không duy nhất. Vui lòng chọn lại mùa giải.");
+                }
+                selected = value;
+            }
+        }
+        if (selected == null) {
+            throw new IllegalArgumentException("Lựa chọn không thuộc kết quả tìm kiếm hiện tại.");
+        }
+        return selected;
+    }
+
+    /** Resolve only cached search results, never an arbitrary database ID. */
+    public void navigate(HttpServletRequest request, int depth, boolean eventsMode) {
+        for (String forbidden : new String[]{"flow", "ready", "mode", "tournamentId", "seasonId", "roundId", "matchId", "matchClubId"}) {
+            if (request.getParameter(forbidden) != null) {
+                throw new IllegalArgumentException("Tham số điều hướng không được hỗ trợ: " + forbidden);
+            }
+        }
+        Season selectedSeason = null;
+        Round selectedRound = null;
+        Match selectedMatch = null;
+        MatchClub selectedSide = null;
+        if (depth >= 1) {
+            String value = code(request, "season", "VLE[0-9]{4}");
+            selectedSeason = unique(seasons, item -> seasonCode(item).equals(value));
+        }
+        if (depth >= 2) {
+            if (selectedSeason != season) {
+                throw new IllegalArgumentException("Vòng đấu không thuộc mùa giải hiện tại.");
+            }
+            String value = code(request, "round", "R[0-9]{2,}");
+            selectedRound = unique(rounds, item -> item.getDisplayCode().equals(value));
+        }
+        if (depth >= 3) {
+            if (selectedRound != round) {
+                throw new IllegalArgumentException("Trận đấu không thuộc vòng đấu hiện tại.");
+            }
+            String value = code(request, "match", "T[0-9]{2,}");
+            selectedMatch = unique(matches, item -> matchCode(item).equals(value));
+        }
+        if (depth >= 4) {
+            String value = code(request, "side", "HOME|AWAY");
+            selectedSide = unique(selectedMatch.getMatchClubs(), item -> value.equals(item.getRole()));
+        }
+        String[] hierarchy = {"season", "round", "match", "side"};
+        for (int index = depth; index < hierarchy.length; index++) {
+            if (request.getParameter(hierarchy[index]) != null) {
+                throw new IllegalArgumentException("Phân cấp điều hướng không hợp lệ.");
+            }
+        }
+        selectMode(eventsMode);
+        if (season != selectedSeason) {
+            clearRound();
+            season = selectedSeason;
+            changed();
+        }
+        if (round != selectedRound) {
+            clearMatch();
+            round = selectedRound;
+            changed();
+        }
+        if (match != selectedMatch) {
+            clearMatch();
+            match = selectedMatch;
+            changed();
+        }
+        if (side != selectedSide) {
+            side = selectedSide;
+            players = new ArrayList<>();
             changed();
         }
     }
@@ -137,13 +227,13 @@ public final class LineupSession {
         return null;
     }
 
-    public static LineupSession get(HttpSession session) {
-        Object value = session.getAttribute("cn2Context");
-        if (value instanceof LineupSession) {
-            return (LineupSession) value;
+    public static SessionContext get(HttpSession session) {
+        Object value = session.getAttribute("sessionContext");
+        if (value instanceof SessionContext) {
+            return (SessionContext) value;
         }
-        LineupSession context = new LineupSession();
-        session.setAttribute("cn2Context", context);
+        SessionContext context = new SessionContext();
+        session.setAttribute("sessionContext", context);
         return context;
     }
 
@@ -229,22 +319,14 @@ public final class LineupSession {
         }
     }
 
-    public void requireOptionalSide(HttpServletRequest request) {
-        if (request.getParameter("matchClubId") == null) {
-            return;
-        }
-        requireMatch(request);
-        int selectedId = id(request, "matchClubId");
-        for (MatchClub club : match.getMatchClubs()) {
-            if (club.getId() == selectedId) {
-                return;
-            }
-        }
-        throw new IllegalArgumentException("CLB không thuộc trận đấu hiện tại.");
+    public String query() {
+        return query(3);
     }
 
-    public String query() {
-        return "mode=" + mode + "&flow=" + version + (tournament == null ? "" : "&tournamentId=" + tournament.getId()) + (season == null ? "" : "&seasonId=" + season.getId()) + (round == null ? "" : "&roundId=" + round.getId()) + (match == null ? "" : "&matchId=" + match.getId());
+    public String query(int depth) {
+        return (depth >= 1 && season != null ? "season=" + seasonCode(season) : "")
+            + (depth >= 2 && round != null ? "&round=" + round.getDisplayCode() : "")
+            + (depth >= 3 && match != null ? "&match=" + matchCode(match) : "");
     }
 
     public void clearSeason() {

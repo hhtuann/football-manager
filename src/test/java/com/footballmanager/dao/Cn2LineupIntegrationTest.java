@@ -6,7 +6,7 @@ import com.footballmanager.model.MatchClub;
 import com.footballmanager.model.MatchPlayer;
 import com.footballmanager.model.Round;
 import com.footballmanager.model.Season;
-import com.footballmanager.util.LineupSession;
+import com.footballmanager.util.SessionContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ class Cn2LineupIntegrationTest {
         Match baseline = load();
         assertNull(baseline.getKickoffTime());
         assertTrue(baseline.isLineupLocked());
-        assertEquals("Chưa xác định", LineupSession.dateTime(baseline.getKickoffTime()));
+        assertEquals("Chưa xác định", SessionContext.dateTime(baseline.getKickoffTime()));
         baseline.setLineupLocked(false);
         assertTrue(baseline.isLineupLocked());
         MatchClub desired = candidate(baseline, "HOME", 11, 0);
@@ -158,7 +158,7 @@ class Cn2LineupIntegrationTest {
             assertNull(round.getStartTime());
             assertNull(round.getEndTime());
         }
-        assertEquals("Chưa xác định", LineupSession.date(null));
+        assertEquals("Chưa xác định", SessionContext.date(null));
         assertEquals(List.of(db.roundId), rounds.searchRound(season, "r07").stream().map(Round::getId).toList());
         assertEquals(List.of(Integer.valueOf(26)),
             rounds.searchRound(season, "Vòng 26").stream().map(Round::getRoundNumber).toList());

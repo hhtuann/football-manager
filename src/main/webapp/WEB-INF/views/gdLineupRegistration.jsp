@@ -16,7 +16,7 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         String error = null;
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         Map<Integer, String> choices = new LinkedHashMap<>();
@@ -24,34 +24,18 @@
             if (request.getAttribute("lineupContextError") != null) {
                 throw new IllegalArgumentException((String) request.getAttribute("lineupContextError"));
             }
-            ctx.requireMatch(request);
-            int selectedId = LineupSession.id(request, "matchClubId");
-            MatchClub selected = null;
-            for (MatchClub item : ctx.match.getMatchClubs()) {
-                if (item.getId() == selectedId) {
-                    selected = item;
-                }
-            }
-            if (selected == null) {
-                throw new IllegalArgumentException("CLB không thuộc trận đấu hiện tại.");
-            }
-            if (request.getAttribute("lineupChoices") == null) {
-                if (ctx.side != selected || !ctx.version().equals(LineupSession.single(request, "ready"))) {
-                    ctx.side = null;
-                    ctx.players = new ArrayList<>();
-                    List<ClubPlayer> loaded = new ClubDAO().getClubPlayerList(selected.getClub());
-                    ctx.side = selected;
-                    ctx.players = loaded;
-                    ctx.changed();
-                    response.sendRedirect(request.getContextPath() + "/index.jsp?page=lineup-registration&" + ctx.query() + "&matchClubId=" + selected.getId() + "&ready=" + ctx.version());
-                    return;
-                }
-                for (MatchPlayer player : selected.getMatchPlayers()) {
-                    choices.put(player.getClubPlayer().getId(), player.getRole());
-                }
-            } else {
+            if ("POST".equals(request.getMethod())) {
                 ctx.requireSide(request);
                 choices = (Map<Integer, String>) request.getAttribute("lineupChoices");
+            } else {
+                MatchClub previousSide = ctx.side;
+                ctx.navigate(request, 4, false);
+                if (previousSide != ctx.side || ctx.players.isEmpty()) {
+                    ctx.players = new ClubDAO().getClubPlayerList(ctx.side.getClub());
+                }
+                for (MatchPlayer player : ctx.side.getMatchPlayers()) {
+                    choices.put(player.getClubPlayer().getId(), player.getRole());
+                }
             }
         } catch (SQLException ex) {
             application.log("Lỗi tải cầu thủ CLB", ex);
@@ -63,7 +47,7 @@
         String title = "Đăng ký cầu thủ thi đấu";
         request.setAttribute("breadcrumb", title);
         if (error == null) {
-            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=match-search&" + ctx.query()}, {"Thông tin trận đấu", request.getContextPath() + "/index.jsp?page=match-info&" + ctx.query()}});
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("season") }, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("round") + "&" + ctx.query(1)}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=" + ctx.searchPage("match") + "&" + ctx.query(2)}, {"Thông tin trận đấu", request.getContextPath() + "/index.jsp?page=match-info&" + ctx.query()}});
         }
 %>
 
@@ -98,8 +82,8 @@
     <% Rule rule = ctx.season.getRule();
         boolean locked = ctx.locked(); %>
     <div class="notice">Đủ 11 đá chính, có ít nhất một Thủ môn đá chính; tối đa <%= rule.getMaxBenchPlayers() %> dự bị
-        và <%= rule.getMaxForeignPlayers() %> ngoại binh trên toàn bộ đội hình. Tuổi tối đa <%= rule.getAgeLimit() %>tại
-        ngày <%= LineupSession.date(ctx.season.getStartDate()) %>. Cầu thủ bị treo giò không được đăng ký. Lưu sẽ thay
+        và <%= rule.getMaxForeignPlayers() %> ngoại binh trên toàn bộ đội hình. Tuổi tối đa <%= rule.getAgeLimit() %> tại
+        ngày <%= SessionContext.date(ctx.season.getStartDate()) %>. Cầu thủ bị treo giò không được đăng ký. Lưu sẽ thay
         thế đội hình bên này; bên còn lại được giữ nguyên.
     </div>
     <% if (rule.getRequiredMainPlayers() != 11) { %>
@@ -142,7 +126,7 @@
                         </td>
                         <td><%= HTMLUtil.escape(player.getFullName()) %>
                         </td>
-                        <td><%= player.getDob() == null ? "Thiếu ngày sinh" : LineupSession.date(player.getDob()) %>
+                        <td><%= player.getDob() == null ? "Thiếu ngày sinh" : SessionContext.date(player.getDob()) %>
                         </td>
                         <td><%= HTMLUtil.escape(player.getPrimaryPosition()) %>
                         </td>

@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
 <%@ page import="com.footballmanager.model.*" %>
 <%@ page import="com.footballmanager.dao.MatchDAO" %>
-<%@ page import="com.footballmanager.util.LineupSession" %>
+<%@ page import="com.footballmanager.util.SessionContext" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.sql.SQLException" %>
@@ -21,7 +21,7 @@
         return;
     }
     synchronized (currentSession) {
-        LineupSession ctx = LineupSession.get(currentSession);
+        SessionContext ctx = SessionContext.get(currentSession);
         Map<Integer, String> choices = new LinkedHashMap<>();
         try {
             ctx.requireCsrf(request);
@@ -53,7 +53,7 @@
                 if (!permitted.contains(name)) {
                     throw new IllegalArgumentException("Biểu mẫu chứa cầu thủ hoặc tham số không thuộc danh sách hiện tại.");
                 }
-                LineupSession.single(request, name);
+                SessionContext.single(request, name);
             }
             MatchClub candidate = new MatchClub();
             candidate.setId(ctx.side.getId());
@@ -62,7 +62,7 @@
             candidate.setScore(ctx.side.getScore());
             List<MatchPlayer> selected = new ArrayList<>();
             for (ClubPlayer member : ctx.players) {
-                String role = LineupSession.single(request, "role_" + member.getId());
+                String role = SessionContext.single(request, "role_" + member.getId());
                 if (role == null) {
                     throw new IllegalArgumentException("Biểu mẫu thiếu lựa chọn cầu thủ. Vui lòng tải lại trang đăng ký.");
                 }

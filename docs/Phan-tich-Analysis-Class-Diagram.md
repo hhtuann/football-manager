@@ -51,7 +51,7 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 | `Club` | `+int id`, `+String fullName`, `+String shortName`, `+int foundingYear`, `+String coachName` | `+Manager manager`, `+Stadium homeStadium`, `+List<ClubPlayer> clubPlayers` | `coachName` chỉ hiển thị — HLV không phải actor |
 | `Stadium` | `+int id`, `+String name`, `+int capacity`, `+String address` | — | |
 
-`Season.name` tiếp tục lưu trong `seasons.name`. Theo yêu cầu cập nhật 10/11/2026, số vòng lưu riêng `Round.number`/`rounds.number`, không còn suy bằng regex tên. Mã `R07` vẫn giữ khi đổi tên vòng; thứ tự trận vẫn derived theo ID trong toàn vòng trước khi lọc và không theo kickoff. Session/URL/FK dùng ID; không tạo `match_number` hoặc metadata nguồn/cờ mô phỏng.
+`Season.name` tiếp tục lưu trong `seasons.name`. Theo yêu cầu cập nhật 10/11/2026, số vòng lưu riêng `Round.number`/`rounds.number`, không còn suy bằng regex tên. Mã `R07` vẫn giữ khi đổi tên vòng; thứ tự trận vẫn derived theo ID trong toàn vòng trước khi lọc và không theo kickoff. UI giữ mã đầy đủ `R07-T01`; GET dùng mã `season=VLE2026&round=R07&match=T01`, phân giải từ kết quả đã tải trong `SessionContext` dùng chung (session key `sessionContext`), thay `LineupSession`. Danh tính vẫn là `currentUser`; POST giữ hidden ID thật, flow và CSRF, khóa chính/FK CSDL không đổi. Không thêm model/service, `match_number` hoặc metadata nguồn/cờ mô phỏng.
 
 ### 1.3. Lớp trung gian — chuỗi xương sống (3)
 
