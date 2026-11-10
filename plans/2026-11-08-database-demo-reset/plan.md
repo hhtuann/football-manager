@@ -58,7 +58,7 @@ Bộ mới: 1 Tournament, 5 Season (mùa chính 2026/27 + bốn mùa cũ chỉ c
 ## Đầu vào
 
 - https://vpf.vn/season/v-league-2027/?action=calendar&pagejs=1 và trang CLB/cầu thủ liên kết.
-- Các JSON/CSV database/vleague_2026_2027_* đang có: dùng đối chiếu, kiểm tra lại các trường cần thiết.
+- JSON/CSV nguồn đã dùng để đối chiếu khi triển khai; đã xóa theo yêu cầu dọn repo ngày 10/11/2026. Thư mục `database/` hiện chỉ giữ `schema.sql` và `dataset.sql`.
 - Xác minh đủ 14 CLB/26 vòng/182 cặp đấu. Kiểm tra lại lỗi nguồn BN–ND vòng15/16; không tự sửa thành cặp khác nếu không có bằng chứng. Nếu nguồn vẫn mâu thuẫn, giữ lịch nguồn và ghi trong tài liệu ngoài database.
 - Hồ sơ thiếu trường bắt buộc: ưu tiên cầu thủ có dữ liệu đủ; không đoán quốc tịch từ tên hoặc biến năm sinh thành ngày sinh chính xác. Nếu cần dữ liệu phục vụ ca demo bổ sung, tách rõ cách tạo trong file nguồn/báo cáo, không khẳng định là thông tin đã xác minh.
 

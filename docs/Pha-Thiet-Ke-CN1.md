@@ -2,9 +2,9 @@
 
 Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC).
 
-> **Phạm vi hiện thực:** đăng nhập qua `UserDAO.checkLogin(User)`, session duy nhất cho danh tính là `currentUser: User`; không dùng session `staff`. `index.jsp` hiển thị `WEB-INF/views/gdHome.jsp`. CN1 và CN2 là phạm vi hiện thực; CN3 vẫn là thiết kế, menu không được mô tả như luồng cập nhật kết quả đã chạy. Ký hiệu `T[]` trong biểu đồ là tập đối tượng; Java dùng `List<T>`. Đồ thị đối tượng chỉ đi từ `Tournament.seasons` xuống dưới, không có tham chiếu ngược từ Season.
+> **Phạm vi hiện thực:** đăng nhập qua `UserDAO.checkLogin(User)`, session duy nhất cho danh tính là `currentUser: User`; không dùng session `staff`. `index.jsp` hiển thị `WEB-INF/views/gdHome.jsp`. CN1, CN2 và CN3 (thêm sự kiện/kết thúc trận) đã có mã nguồn JSP–DAO. Ký hiệu `T[]` biểu diễn tập đối tượng; Java dùng `List<T>`. Đồ thị đối tượng một chiều từ Tournament xuống Season/Round/Match.
 
-> **Contract dữ liệu 08/11/2026:** giữ `Season.name`/`seasons.name`; số vòng và số thứ tự trận chỉ là dữ liệu hiển thị derived trong Java, không có cột `round_number`/`match_number` hay cờ mô phỏng. Số vòng suy từ tên chuẩn `Vòng 1` ... `Vòng 26` (fallback ổn định nếu tên không có số); thứ tự trận theo ID trong toàn vòng trước khi lọc, không theo kickoff. Mã như `R07-T01` không thay ID dùng trong URL/session/FK.
+> **Contract cập nhật 10/11/2026:** giữ `Season.name`/`seasons.name`; `Round.number` lưu tại `rounds.number`, số dương và duy nhất trong mùa, độc lập tên vòng. Thứ tự trận vẫn derived theo ID trong toàn vòng trước khi lọc, không theo kickoff. Mã như `R07-T01` không thay ID dùng trong URL/session/FK. Cài đặt dùng hai file `schema.sql` → `dataset.sql`.
 
 > **Bộ demo:** 1 Tournament, 5 Season (2026/27 là mùa chính; bốn mùa cũ chỉ có thông tin mùa), 14 CLB, 26 vòng/182 trận mùa chính. Cặp đấu và hồ sơ CLB/cầu thủ dựa VPF; ngày được dịch theo mốc seed, đội hình/sự kiện phục vụ ca nghiệp vụ. Nguồn và phần bổ sung ghi ngoài database, không gắn nhãn/cảnh báo mô phỏng trên UI; mọi thẻ đều tính treo giò theo luật CN2. Dữ liệu sự kiện không đồng nghĩa triển khai CN3.
 
@@ -192,6 +192,7 @@ classDiagram
     }
     class Round {
         +id: int
+        +number: int
         +name: String
         +startTime: LocalDateTime
         +endTime: LocalDateTime

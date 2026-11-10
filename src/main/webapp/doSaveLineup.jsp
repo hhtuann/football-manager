@@ -1,6 +1,10 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
-<%@ page
-        import="com.footballmanager.model.*,com.footballmanager.dao.MatchDAO,com.footballmanager.util.LineupSession,jakarta.servlet.http.HttpSession,java.util.*,java.sql.SQLException" %>
+<%@ page import="com.footballmanager.model.*" %>
+<%@ page import="com.footballmanager.dao.MatchDAO" %>
+<%@ page import="com.footballmanager.util.LineupSession" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.sql.SQLException" %>
 <%
     request.setCharacterEncoding("UTF-8");
     response.setHeader("Cache-Control", "no-store");
@@ -10,7 +14,9 @@
         return;
     }
     HttpSession currentSession = request.getSession(false);
-    if (currentSession == null || !(currentSession.getAttribute("currentUser") instanceof Staff)) {
+    Object currentUser = currentSession == null ? null : currentSession.getAttribute("currentUser");
+
+    if (!(currentUser instanceof Staff)) {
         response.sendError(403);
         return;
     }
@@ -30,7 +36,7 @@
         }
         String error = null;
         try {
-            Set<String> permitted = new HashSet<>(Arrays.asList("flow", "csrf", "tournamentId", "seasonId", "roundId", "matchId", "matchClubId"));
+            Set<String> permitted = new HashSet<>(Arrays.asList("mode", "flow", "csrf", "tournamentId", "seasonId", "roundId", "matchId", "matchClubId"));
             Map<Integer, ClubPlayer> members = new LinkedHashMap<>();
             for (ClubPlayer member : ctx.players) {
                 members.put(member.getId(), member);
@@ -39,11 +45,14 @@
             // Collect known choices before validating so business errors preserve the form.
             for (ClubPlayer member : ctx.players) {
                 String[] submitted = request.getParameterValues("role_" + member.getId());
-                if (submitted != null && submitted.length == 1) choices.put(member.getId(), submitted[0]);
+                if (submitted != null && submitted.length == 1) {
+                    choices.put(member.getId(), submitted[0]);
+                }
             }
             for (String name : request.getParameterMap().keySet()) {
-                if (!permitted.contains(name))
+                if (!permitted.contains(name)) {
                     throw new IllegalArgumentException("Biểu mẫu chứa cầu thủ hoặc tham số không thuộc danh sách hiện tại.");
+                }
                 LineupSession.single(request, name);
             }
             MatchClub candidate = new MatchClub();
@@ -54,19 +63,24 @@
             List<MatchPlayer> selected = new ArrayList<>();
             for (ClubPlayer member : ctx.players) {
                 String role = LineupSession.single(request, "role_" + member.getId());
-                if (role == null)
+                if (role == null) {
                     throw new IllegalArgumentException("Biểu mẫu thiếu lựa chọn cầu thủ. Vui lòng tải lại trang đăng ký.");
-                if (role.isEmpty()) continue;
-                if (!"STARTING".equals(role) && !"SUBSTITUTE".equals(role))
+                }
+                if (role.isEmpty()) {
+                    continue;
+                }
+                if (!"STARTING".equals(role) && !"SUBSTITUTE".equals(role)) {
                     throw new IllegalArgumentException("Vai trò thi đấu không hợp lệ.");
+                }
                 MatchPlayer player = new MatchPlayer();
                 player.setClubPlayer(member);
                 player.setRole(role);
                 selected.add(player);
             }
             candidate.setMatchPlayers(selected);
-            if (!new MatchDAO().saveLineup(ctx.match, candidate))
+            if (!new MatchDAO().saveLineup(ctx.match, candidate)) {
                 throw new IllegalArgumentException("Không thể lưu đội hình. Vui lòng thử lại.");
+            }
             // DAO has committed and populated persistent IDs / timestamps on the candidate.
             ctx.side.setMatchPlayers(candidate.getMatchPlayers());
             ctx.changed();

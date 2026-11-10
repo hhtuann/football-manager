@@ -27,7 +27,9 @@ class Cn2TournamentIntegrationTest {
 
     @AfterEach
     void cleanup() throws Exception {
-        if (db != null) db.close();
+        if (db != null) {
+            db.close();
+        }
     }
 
     @Test

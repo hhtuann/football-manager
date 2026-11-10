@@ -208,3 +208,71 @@
         padding: 12px;
     }
 }
+
+.event-score {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.event-score section {
+    padding: 20px;
+    border: 1px solid #cddfd3;
+    border-radius: 12px;
+    background: #edf6f0;
+}
+
+.event-score strong {
+    font-size: 40px;
+    color: #0e5a3c;
+}
+
+.event-fields {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(0, 3fr);
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.event-fields input, .event-fields textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #b3cbbd;
+    border-radius: 10px;
+    box-sizing: border-box;
+    font: inherit;
+}
+
+.event-fields select {
+    width: 100%;
+    min-width: 0;
+}
+
+.event-table {
+    max-height: 480px;
+}
+
+.event-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+    .event-fields {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .event-score {
+        gap: 10px;
+    }
+
+    .event-score section {
+        padding: 12px;
+    }
+}

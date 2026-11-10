@@ -9,15 +9,31 @@ import java.util.List;
 
 public class SeasonDAO extends DAO {
     public List<Season> searchSeason(Tournament tournament, String key) throws SQLException {
-        if (tournament == null || tournament.getId() <= 0)
+        if (tournament == null || tournament.getId() <= 0) {
             throw new IllegalArgumentException("Ngữ cảnh giải đấu không hợp lệ.");
+        }
         String sql = """
-                SELECT s.*, r.required_main_players, r.max_bench_players, r.max_substitutions,
-                       r.yellow_cards_to_suspend, r.age_limit, r.max_foreign_players
-                FROM seasons s JOIN rules r ON r.id=s.rule_id
-                WHERE s.tournament_id=? AND (s.name ILIKE ? OR CAST(s.year AS text) ILIKE ? OR s.status ILIKE ?)
-                ORDER BY s.year DESC, s.id
-                """;
+            SELECT
+                s.*,
+                r.required_main_players,
+                r.max_bench_players,
+                r.max_substitutions,
+                r.yellow_cards_to_suspend,
+                r.age_limit,
+                r.max_foreign_players
+            FROM seasons s
+            JOIN rules r
+                ON r.id = s.rule_id
+            WHERE s.tournament_id = ?
+                AND (
+                    s.name ILIKE ?
+                    OR CAST(s.year AS TEXT) ILIKE ?
+                    OR s.status ILIKE ?
+                )
+            ORDER BY
+                s.year DESC,
+                s.id
+            """;
         List<Season> result = new ArrayList<>();
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             String keyword = "%" + (key == null ? "" : key.trim()) + "%";

@@ -13,42 +13,40 @@ public class UserDAO extends DAO {
             return null;
         }
 
-
         String sql = """
-                SELECT
-                    u.id,
-                    u.username,
-                    u.full_name,
-                    u.dob,
-                    u.email,
-                    u.phone,
-                
-                    m.user_id AS manager_id,
-                
-                    s.user_id AS staff_id,
-                    s.position AS staff_position,
-                
-                    p.user_id AS player_id,
-                    p.nationality,
-                    p.primary_position,
-                    p.height_cm,
-                    p.weight_kg
-                
-                FROM users u
-                
-                LEFT JOIN managers m
-                    ON m.user_id = u.id
-                
-                LEFT JOIN staff s
-                    ON s.user_id = u.id
-                
-                LEFT JOIN players p
-                    ON p.user_id = u.id
-                
-                WHERE u.username = ?
-                  AND u.password_hash = crypt(?, u.password_hash)
-                """;
+            SELECT
+                u.id,
+                u.username,
+                u.full_name,
+                u.dob,
+                u.email,
+                u.phone,
 
+                m.user_id AS manager_id,
+
+                s.user_id AS staff_id,
+                s.position AS staff_position,
+
+                p.user_id AS player_id,
+                p.nationality,
+                p.primary_position,
+                p.height_cm,
+                p.weight_kg
+
+            FROM users u
+
+            LEFT JOIN managers m
+                ON m.user_id = u.id
+
+            LEFT JOIN staff s
+                ON s.user_id = u.id
+
+            LEFT JOIN players p
+                ON p.user_id = u.id
+
+            WHERE u.username = ?
+              AND u.password_hash = crypt(?, u.password_hash)
+            """;
 
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 

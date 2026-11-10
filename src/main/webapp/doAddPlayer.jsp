@@ -9,7 +9,8 @@
 <%
     request.setCharacterEncoding("UTF-8");
 
-    if (!"POST".equalsIgnoreCase(request.getMethod())) {
+    if (!"POST".equals(request.getMethod())) {
+        response.setHeader("Allow", "POST");
         response.sendError(405);
         return;
     }
@@ -32,13 +33,7 @@
         String heightCm = request.getParameter("height-cm");
         String weightKg = request.getParameter("weight-kg");
 
-        if (fullName == null || fullName.isBlank() || dob == null || dob.isBlank()
-                || nationality == null || nationality.isBlank()
-                || primaryPosition == null || primaryPosition.isBlank()
-                || email == null || email.isBlank()
-                || phone == null || phone.isBlank()
-                || heightCm == null || heightCm.isBlank()
-                || weightKg == null || weightKg.isBlank()) {
+        if (fullName == null || fullName.isBlank() || dob == null || dob.isBlank() || nationality == null || nationality.isBlank() || primaryPosition == null || primaryPosition.isBlank() || email == null || email.isBlank() || phone == null || phone.isBlank() || heightCm == null || heightCm.isBlank() || weightKg == null || weightKg.isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập đầy đủ thông tin bắt buộc!");
         }
 
@@ -52,8 +47,7 @@
         player.setHeightCm(Double.parseDouble(heightCm));
         player.setWeightKg(Double.parseDouble(weightKg));
 
-        if (!Double.isFinite(player.getHeightCm()) || !Double.isFinite(player.getWeightKg())
-                || player.getHeightCm() <= 0 || player.getWeightKg() <= 0) {
+        if (!Double.isFinite(player.getHeightCm()) || !Double.isFinite(player.getWeightKg()) || player.getHeightCm() <= 0 || player.getWeightKg() <= 0) {
             throw new IllegalArgumentException("Chiều cao và cân nặng phải lớn hơn 0!");
         }
 

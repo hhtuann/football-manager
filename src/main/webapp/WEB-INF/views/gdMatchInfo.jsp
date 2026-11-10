@@ -1,10 +1,16 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
-<%@ page
-        import="com.footballmanager.model.*,com.footballmanager.dao.*,com.footballmanager.util.*,jakarta.servlet.http.HttpSession,java.util.*,java.sql.SQLException" %>
+<%@ page import="com.footballmanager.model.*" %>
+<%@ page import="com.footballmanager.dao.*" %>
+<%@ page import="com.footballmanager.util.*" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.sql.SQLException" %>
 <%
     response.setHeader("Cache-Control", "no-store");
     HttpSession currentSession = request.getSession(false);
-    if (currentSession == null || !(currentSession.getAttribute("currentUser") instanceof Staff)) {
+    Object currentUser = currentSession == null ? null : currentSession.getAttribute("currentUser");
+
+    if (!(currentUser instanceof Staff)) {
         response.sendError(403);
         return;
     }
@@ -16,8 +22,14 @@
             ctx.requireRound(request);
             int selectedId = LineupSession.id(request, "matchId");
             Match selected = null;
-            for (Match item : ctx.matches) if (item.getId() == selectedId) selected = item;
-            if (selected == null) throw new IllegalArgumentException("Trận đấu không thuộc kết quả tìm kiếm hiện tại.");
+            for (Match item : ctx.matches) {
+                if (item.getId() == selectedId) {
+                    selected = item;
+                }
+            }
+            if (selected == null) {
+                throw new IllegalArgumentException("Trận đấu không thuộc kết quả tìm kiếm hiện tại.");
+            }
             ctx.requireOptionalSide(request);
             if (ctx.match != selected) {
                 ctx.clearMatch();
@@ -31,11 +43,9 @@
         }
         String title = "Thông tin trận đấu";
         request.setAttribute("breadcrumb", title);
-        if (error == null) request.setAttribute("breadcrumbParents", new String[][]{
-                {"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()},
-                {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()},
-                {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=match-search&" + ctx.query()}
-        });
+        if (error == null) {
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()}, {"Tìm trận đấu", request.getContextPath() + "/index.jsp?page=match-search&" + ctx.query()}});
+        }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= HTMLUtil.escape(title) %> - Football Manager</title>

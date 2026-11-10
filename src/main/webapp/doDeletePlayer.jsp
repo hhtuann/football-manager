@@ -7,7 +7,8 @@
 <%
     request.setCharacterEncoding("UTF-8");
 
-    if (!"POST".equalsIgnoreCase(request.getMethod())) {
+    if (!"POST".equals(request.getMethod())) {
+        response.setHeader("Allow", "POST");
         response.sendError(405);
         return;
     }
@@ -24,7 +25,9 @@
 
     try {
         playerId = Integer.parseInt(request.getParameter("player-id"));
-        if (playerId <= 0) throw new NumberFormatException();
+        if (playerId <= 0) {
+            throw new NumberFormatException();
+        }
     } catch (NumberFormatException e) {
         response.sendError(400, "ID cầu thủ không hợp lệ!");
         return;

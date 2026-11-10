@@ -3,7 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
     resultDialog?.showModal();
 
     const dialog = document.getElementById("delete-player-dialog");
-    if (!dialog) return;
+    if (!dialog) {
+        return;
+    }
 
     document.querySelectorAll(".search-results .delete-btn").forEach(button => {
         button.addEventListener("click", () => {

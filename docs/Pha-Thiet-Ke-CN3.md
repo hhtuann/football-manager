@@ -2,14 +2,18 @@
 
 Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC).
 
-> **Trạng thái: CHƯA HIỆN THỰC CN3.** Các trang sự kiện, `EventDAO`, `addEvent`, `getEventList` và `MatchDAO.saveMatch` bên dưới là thiết kế dự kiến, không phải API/route đã triển khai. Chỉ luồng tìm Tournament → Season → Round → Match dùng chung CN2 là hiện thực. Mục updateResult trên trang chủ chưa mở luồng CN3. Thiết kế tiếp tục dùng JSP–DAO/PostgreSQL và `currentUser`, không thêm Controller. Ký hiệu `T[]` biểu diễn tập đối tượng (`List<T>` trong Java).
+> **Trạng thái: ĐÃ HIỆN THỰC CN3.** Staff đi từ trang chủ qua tìm mùa → vòng → trận đến `gdMatchEvent.jsp`/`gdEventForm.jsp`; POST `doAddEvent.jsp` gọi `EventDAO.addEvent(Match, Event)`, POST `doEndMatch.jsp` gọi `MatchDAO.saveMatch(Match)`. `EventDAO.getEventList(int)` trả `List<Event>` đúng subtype. Dùng JSP–DAO/PostgreSQL, session `currentUser`, không thêm Controller/Service. Chỉ thêm sự kiện và kết thúc, không sửa/xóa/mở lại trận.
 
-> **Phạm vi dữ liệu demo 08/11/2026:** 1 Tournament, 5 Season (2026/27 là mùa chính, bốn mùa cũ chỉ có thông tin mùa), 14 CLB, 26 vòng/182 trận mùa chính. Cặp đấu và hồ sơ CLB/cầu thủ dựa nguồn VPF; lịch được dịch quanh ngày mốc seed, đội hình và diễn biến bổ sung phục vụ ca nghiệp vụ, không khẳng định là kết quả lịch sử đã xác minh. Nguồn và khác biệt được ghi trong file repo, không thêm metadata bền vững hay cờ `is_simulated`/`simulated`, không có nhãn/cảnh báo mô phỏng trên UI. **Mọi thẻ đã lưu đều tham gia tính treo giò theo luật CN2**, không có miễn trừ cho ca demo. Nhập dữ liệu không mở route CN3 hay chứng minh EventDAO đã hiện thực. Ngày chưa xác định vẫn có thể null; bộ demo bố trí kickoff rõ để thao tác CN2, không thay đổi nullability của schema.
+> **Phạm vi dữ liệu demo 08/11/2026:** 1 Tournament, 5 Season, 14 CLB, 26 vòng/182 trận mùa chính. Cặp đấu/hồ sơ dựa nguồn VPF; lịch dịch quanh ngày seed, đội hình/diễn biến phục vụ demo không phải biên bản lịch sử đã xác minh. Nguồn/khác biệt lưu ngoài database, không metadata mô phỏng; mọi thẻ đều tính treo giò. CN3 không yêu cầu reset hoặc đổi schema. Ngày chưa xác định vẫn nullable.
 
-> **Contract mô hình:** tiếp tục giữ `Season.name`/`seasons.name` và đồ thị đối tượng một chiều từ Tournament xuống Season/Round/Match. Số vòng derived từ tên chuẩn `Vòng 1` ... `Vòng 26` (fallback ổn định nếu tên không có số); số thứ tự trận derived theo ID trong toàn vòng trước khi lọc, không theo kickoff. Mã hiển thị như `R07-T01` có thể tính trong Java, không có cột `round_number`/`match_number`; session/URL/FK vẫn dùng ID. Các luồng ghi sự kiện bên dưới chỉ là thiết kế, không thuộc đợt làm mới dữ liệu.
+> **Contract mô hình cập nhật 10/11/2026:** giữ `seasons.name`, đồ thị một chiều và kế thừa Event; `Round.number` lưu tại `rounds.number`, độc lập tên. Mã vòng/trận hiển thị dùng số vòng và thứ tự ID trận, không thay ID trong URL/session/FK. Điều hướng dùng chung CN2 với `mode=events`; đổi mode hoặc mùa/vòng/trận vô hiệu hóa ngữ cảnh cũ.
 
 
 > Danh tính đăng nhập kế thừa CN1 là session `currentUser: User` qua `UserDAO`, không phải session `staff`. Các tham số ID chỉ chọn đối tượng trong ngữ cảnh đã tải, không tạo đối tượng tin cậy trực tiếp từ request.
+
+> **Quy tắc cài đặt:** chỉ nhận SCHEDULED/ONGOING với hai đội hình đủ 11 chính/có thủ môn và quota hợp lệ; sự kiện đầu tiên chuyển ONGOING, kết thúc chuyển FINISHED (0–0 hợp lệ). Không thêm action bắt đầu hoặc giới hạn kickoff chưa được báo cáo quy định. Phút/bù giờ là số nguyên không âm, ghi chú tối đa255 ký tự. Replay toàn bộ timeline theo phút/bù giờ/ID để chặn actor đã ra sân/thẻ đỏ, cầu thủ dự bị chưa vào, thay người quá Rule.maxSubstitutions hoặc vào lại. Hai vàng không tự sinh đỏ. Thêm lùi thời điểm không được làm sai sự kiện phía sau.
+>
+> **Giao dịch và bảo mật:** match row FOR UPDATE dùng chung với CN2, kiểm tra đăng ký hiện tại trong DB, ghi Event+subtype nguyên tử; FINISHED bị chặn tại DAO và POST, không chỉ UI. ID/cache chỉ đổi sau commit; tỷ số lấy `v_match_scores`, OWN cộng đối phương. `EventDAO.refreshMatch(Match)` đọc status/tỷ số mới nhất mà không tải lại đội hình. POST yêu cầu Staff/currentUser, CSRF, flow và đầy đủ ID ngữ cảnh; lỗi giữ lựa chọn, PRG và escape HTML.
 
 ---
 
@@ -295,6 +299,7 @@ classDiagram
     }
     class Round {
         +id: int
+        +number: int
         +name: String
         +startTime: LocalDateTime
         +endTime: LocalDateTime

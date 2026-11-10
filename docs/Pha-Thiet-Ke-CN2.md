@@ -97,7 +97,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
 #### Quy tắc CN2 đã chốt
 
 - **Ngữ cảnh một chiều:** `Tournament.seasons → Season.rounds → Round.matches → Match.matchClubs → MatchClub.matchPlayers`; Season không giữ Tournament. `Club.clubPlayers` chứa danh sách cầu thủ CLB; `getClubPlayerList(Club)` không nhận Season. Điều lệ lấy từ Season trong ngữ cảnh cha đã chọn, không thêm liên kết ngược vào entity.
-- **Mã hiển thị:** giữ `Season.name`/`seasons.name`. Số vòng suy ra từ tên chuẩn `Vòng 1` ... `Vòng 26`, không phải khóa chính; `R07` và `Vòng 7` tìm cùng vòng, tên không có số dùng fallback ổn định. Trận thứ nhất của vòng 7 hiển thị `R07-T01`; số thứ tự trận derived theo ID trong **toàn vòng trước khi lọc từ khóa**, không theo kickoff để mã không đổi khi sửa lịch. Các giá trị hiển thị có thể derived trong Java nhưng không có cột `round_number`/`match_number`. ID nội bộ giữ nguyên cho session/URL/FK; không renumber khóa chính để đổi nhãn.
+- **Mã hiển thị (cập nhật 10/11/2026):** giữ `Season.name`/`seasons.name`; `Round.number` lưu ở `rounds.number`, bắt buộc số dương và duy nhất theo mùa. Mã `R07` lấy từ số vòng, không regex tên; tìm theo tên hiện tại hoặc mã. Đổi tên vòng không đổi mã vòng/trận. `R07-T01` dùng số vòng và thứ tự ID trận trong **toàn vòng trước khi lọc**, không theo kickoff. URL/session/FK vẫn dùng ID, không renumber khóa chính.
 - **Cấu hình và vai trò:** `Rule.requiredMainPlayers` bắt buộc bằng **11**; giá trị khác là lỗi cấu hình, không đổi số người đá chính theo giá trị đó. Đội hình có đúng 11 `STARTING`, trong đó ít nhất một cầu thủ có `primaryPosition` là **Thủ môn**; số `SUBSTITUTE` không vượt `maxBenchPlayers`. Mỗi cầu thủ chỉ xuất hiện một lần và thuộc đúng CLB của MatchClub đang đăng ký.
 - **Tuổi:** tuổi tròn tại `Season.startDate` phải **≤ `Rule.ageLimit`**, áp dụng cho cả đá chính và dự bị; không tính theo ngày lưu hay ngày đá trận.
 - **Quốc tịch:** trim trước khi so sánh không phân biệt hoa/thường; **Việt Nam** là nội binh, quốc tịch hợp lệ khác là ngoại binh. Quốc tịch thiếu/rỗng là dữ liệu không hợp lệ, không xem là nội binh. Tổng ngoại binh trên **toàn bộ đội hình** (STARTING + SUBSTITUTE) không vượt `maxForeignPlayers`.
@@ -106,7 +106,7 @@ Kiến trúc: **JSP – DAO**, không Controller. Java + JSP + PostgreSQL (JDBC)
 - **Điều kiện lưu:** `saveLineup(Match, MatchClub)` chỉ lưu khi CSDL mới nhất vẫn có `Match.status = SCHEDULED`, kickoff **khác null**, hiện tại trước kickoff và trận có **0 sự kiện**. Ngày chưa công bố hiển thị “Chưa xác định”, không cho đăng ký. DAO kiểm tra lại luật và trạng thái trong transaction; session không thay thế kiểm tra CSDL.
 - **Toàn vẹn cập nhật:** so sánh baseline đội hình đã đọc với CSDL, từ chối baseline cũ thay vì ghi đè chỉnh sửa đồng thời. Cầu thủ được giữ lại (kể cả đổi vai trò) giữ nguyên `MatchPlayer.id` và `registeredAt`; chỉ cầu thủ mới có đăng ký mới. Cập nhật nguyên tử đúng MatchClub được chọn, không xóa/tạo lại toàn bộ và không sửa đội hình bên còn lại. Sau khi lưu, cập nhật ngữ cảnh session bằng kết quả đã lưu; nếu lỗi, không công bố thành công hoặc giữ đội hình chưa lưu làm dữ liệu đã xác nhận.
 
-CN2 đọc lịch sử sự kiện để kiểm tra treo giò; điều này **không đồng nghĩa CN3 đã được hiện thực**. Luồng tạo sự kiện/kết thúc trận vẫn là thiết kế trong `Pha-Thiet-Ke-CN3.md`.
+CN2 đọc lịch sử sự kiện để kiểm tra treo giò. CN3 đã triển khai thêm sự kiện/kết thúc trận qua EventDAO và MatchDAO; các thẻ mới cũng tham gia cùng quy tắc treo giò. Luồng tìm mùa/vòng/trận dùng chung, mode điều hướng phân biệt đăng ký và cập nhật kết quả.
 
 
 ### 1.3. Tầng thực thể
@@ -287,6 +287,7 @@ classDiagram
     }
     class Round {
         +id: int
+        +number: int
         +name: String
         +startTime: LocalDateTime
         +endTime: LocalDateTime

@@ -7,7 +7,8 @@
 <%
     request.setCharacterEncoding("UTF-8");
 
-    if (!"POST".equalsIgnoreCase(request.getMethod())) {
+    if (!"POST".equals(request.getMethod())) {
+        response.setHeader("Allow", "POST");
         response.sendError(405);
         return;
     }
@@ -29,7 +30,9 @@
             request.getRequestDispatcher("/WEB-INF/views/gdLogin.jsp").forward(request, response);
         } else {
             HttpSession oldSession = request.getSession(false);
-            if (oldSession != null) oldSession.invalidate();
+            if (oldSession != null) {
+                oldSession.invalidate();
+            }
 
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("currentUser", user);

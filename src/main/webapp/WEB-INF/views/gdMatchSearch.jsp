@@ -1,10 +1,16 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
-<%@ page
-        import="com.footballmanager.model.*,com.footballmanager.dao.*,com.footballmanager.util.*,jakarta.servlet.http.HttpSession,java.util.*,java.sql.SQLException" %>
+<%@ page import="com.footballmanager.model.*" %>
+<%@ page import="com.footballmanager.dao.*" %>
+<%@ page import="com.footballmanager.util.*" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.sql.SQLException" %>
 <%
     response.setHeader("Cache-Control", "no-store");
     HttpSession currentSession = request.getSession(false);
-    if (currentSession == null || !(currentSession.getAttribute("currentUser") instanceof Staff)) {
+    Object currentUser = currentSession == null ? null : currentSession.getAttribute("currentUser");
+
+    if (!(currentUser instanceof Staff)) {
         response.sendError(403);
         return;
     }
@@ -14,12 +20,20 @@
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         try {
             ctx.requireSeason(request);
-            if (request.getParameter("matchId") != null) ctx.requireMatch(request);
+            if (request.getParameter("matchId") != null) {
+                ctx.requireMatch(request);
+            }
             ctx.requireOptionalSide(request);
             int selectedId = LineupSession.id(request, "roundId");
             Round selected = null;
-            for (Round item : ctx.rounds) if (item.getId() == selectedId) selected = item;
-            if (selected == null) throw new IllegalArgumentException("Vòng đấu không thuộc kết quả tìm kiếm hiện tại.");
+            for (Round item : ctx.rounds) {
+                if (item.getId() == selectedId) {
+                    selected = item;
+                }
+            }
+            if (selected == null) {
+                throw new IllegalArgumentException("Vòng đấu không thuộc kết quả tìm kiếm hiện tại.");
+            }
             if (ctx.round != selected || !ctx.version().equals(LineupSession.single(request, "ready"))) {
                 ctx.clearMatch();
                 ctx.round = selected;
@@ -37,10 +51,9 @@
         }
         String title = "Tìm trận đấu";
         request.setAttribute("breadcrumb", title);
-        if (error == null) request.setAttribute("breadcrumbParents", new String[][]{
-                {"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()},
-                {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()}
-        });
+        if (error == null) {
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}, {"Tìm vòng đấu", request.getContextPath() + "/index.jsp?page=round-search&" + ctx.query()}});
+        }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= HTMLUtil.escape(title) %> - Football Manager</title>
@@ -54,7 +67,8 @@
     <% if (error != null) { %>
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
-    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search">« Quay lại</a>
+    <a class="back-link"
+       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=<%= ctx.mode %>">« Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <% } else { %>
@@ -66,11 +80,12 @@
     <div class="search-toolbar">
         <form action="${pageContext.request.contextPath}/index.jsp" method="get">
             <input type="hidden" name="page" value="match-search">
+            <input type="hidden" name="mode" value="<%= ctx.mode %>">
             <input type="hidden" name="flow" value="<%= ctx.version() %>">
             <input type="hidden" name="tournamentId" value="<%= ctx.tournament.getId() %>"><input type="hidden"
                                                                                                   name="seasonId"
                                                                                                   value="<%= ctx.season.getId() %>"><input
-                type="hidden" name="roundId" value="<%= ctx.round.getId() %>">
+            type="hidden" name="roundId" value="<%= ctx.round.getId() %>">
             <label class="sr-only" for="key">Tìm kiếm trận đấu</label><input type="text" id="key" name="key"
                                                                              value="<%= HTMLUtil.escape(key) %>"
                                                                              placeholder="Nhập mã trận, tên CLB hoặc trạng thái...">
@@ -87,12 +102,13 @@
                     <th>Đội khách</th>
                     <th>Ngày thi đấu</th>
                     <th>Giờ thi đấu</th>
-                    <th>Trạng thái đăng kí</th>
+                    <th><%= ctx.eventMode() ? "Trạng thái trận" : "Trạng thái đăng kí" %>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
                 <% for (Match item : ctx.matches) { %>
-                <tr data-row-link="${pageContext.request.contextPath}/index.jsp?page=match-info&amp;<%= HTMLUtil.escape(ctx.query()) %>&amp;matchId=<%= item.getId() %>"
+                <tr data-row-link="${pageContext.request.contextPath}/index.jsp?page=<%= ctx.eventMode() ? "match-event" : "match-info" %>&amp;<%= HTMLUtil.escape(ctx.query()) %>&amp;matchId=<%= item.getId() %>"
                     tabindex="0" role="link">
                     <td><strong><%= HTMLUtil.escape(item.getDisplayCode()) %>
                     </strong></td>
@@ -105,7 +121,7 @@
                     </td>
                     <td><%= item.getKickoffTime() == null ? "Chưa xác định" : item.getKickoffTime().format(java.time.format.DateTimeFormatter.ofPattern("HH'h'mm")) %>
                     </td>
-                    <td><%= item.getMatchClubs().size() == 2 && item.getMatchClubs().stream().allMatch(c -> c.getMatchPlayers().stream().filter(p -> "STARTING".equals(p.getRole())).count() == 11) ? "Đã đủ đội hình" : "Chưa đủ đội hình" %>
+                    <td><%= ctx.eventMode() ? HTMLUtil.escape(LineupSession.status(item.getStatus())) : item.getMatchClubs().size() == 2 && item.getMatchClubs().stream().allMatch(c -> c.getMatchPlayers().stream().filter(p -> "STARTING".equals(p.getRole())).count() == 11) ? "Đã đủ đội hình" : "Chưa đủ đội hình" %>
                     </td>
                 </tr>
                 <% } %>

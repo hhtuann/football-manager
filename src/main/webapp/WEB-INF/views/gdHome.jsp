@@ -46,7 +46,9 @@
             </a>
             <a class="function-btn" href="${pageContext.request.contextPath}/index.jsp?page=season-search">Đăng ký cầu
                 thủ thi đấu cho trận đấu</a>
-            <button class="function-btn" disabled>Cập nhật kết quả thi đấu</button>
+            <a class="function-btn"
+               href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=events">Cập nhật kết quả
+                thi đấu</a>
             <% } else if (user instanceof Player) { %>
             <button class="function-btn" disabled>Quản lý thông tin cầu thủ</button>
             <% } else if (user instanceof Manager) { %>

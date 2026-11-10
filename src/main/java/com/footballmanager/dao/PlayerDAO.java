@@ -13,17 +13,26 @@ public class PlayerDAO extends UserDAO {
         String keyword = "%" + (searchKey == null ? "" : searchKey.trim()) + "%";
 
         String sql = """
-                SELECT u.id, u.username, u.full_name, u.dob,
-                       u.email, u.phone, p.nationality,
-                       p.primary_position, p.height_cm, p.weight_kg
-                FROM players p
-                JOIN users u ON p.user_id = u.id
-                WHERE u.full_name ILIKE ? OR u.username ILIKE ?
-                ORDER BY u.id
-                """;
+            SELECT
+                u.id,
+                u.username,
+                u.full_name,
+                u.dob,
+                u.email,
+                u.phone,
+                p.nationality,
+                p.primary_position,
+                p.height_cm,
+                p.weight_kg
+            FROM players p
+            JOIN users u
+                ON p.user_id = u.id
+            WHERE u.full_name ILIKE ?
+                OR u.username ILIKE ?
+            ORDER BY u.id
+            """;
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, keyword);
             ps.setString(2, keyword);
@@ -53,15 +62,41 @@ public class PlayerDAO extends UserDAO {
 
     public boolean addPlayer(Player player) throws SQLException {
         String sqlUser = """
-                INSERT INTO users (username, password_hash, full_name, dob, email, phone)
-                VALUES (?, crypt(?, gen_salt('bf', 12)), ?, ?, ?, ?)
-                RETURNING id
-                """;
+            INSERT INTO users (
+                username,
+                password_hash,
+                full_name,
+                dob,
+                email,
+                phone
+            )
+            VALUES (
+                ?,
+                crypt(?, gen_salt('bf', 12)),
+                ?,
+                ?,
+                ?,
+                ?
+            )
+            RETURNING id
+            """;
 
         String sqlPlayer = """
-                INSERT INTO players (user_id, nationality, primary_position, height_cm, weight_kg)
-                VALUES (?, ?, ?, ?, ?)
-                """;
+            INSERT INTO players (
+                user_id,
+                nationality,
+                primary_position,
+                height_cm,
+                weight_kg
+            )
+            VALUES (
+                ?,
+                ?,
+                ?,
+                ?,
+                ?
+            )
+            """;
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
@@ -69,9 +104,14 @@ public class PlayerDAO extends UserDAO {
             try {
                 long code;
 
-                try (PreparedStatement ps = conn.prepareStatement("SELECT nextval('player_code_seq')");
-                     ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) throw new SQLException("Không thể cấp mã cầu thủ!");
+                String sqlCode = """
+                    SELECT
+                        nextval('player_code_seq')
+                    """;
+                try (PreparedStatement ps = conn.prepareStatement(sqlCode); ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new SQLException("Không thể cấp mã cầu thủ!");
+                    }
                     code = rs.getLong(1);
                 }
 
@@ -87,7 +127,9 @@ public class PlayerDAO extends UserDAO {
                     ps.setString(6, player.getPhone());
 
                     try (ResultSet rs = ps.executeQuery()) {
-                        if (!rs.next()) throw new SQLException("Không thể tạo tài khoản cầu thủ!");
+                        if (!rs.next()) {
+                            throw new SQLException("Không thể tạo tài khoản cầu thủ!");
+                        }
                         userId = rs.getInt("id");
                     }
                 }
@@ -120,16 +162,24 @@ public class PlayerDAO extends UserDAO {
 
     public boolean updatePlayer(Player player) throws SQLException {
         String sqlUser = """
-                UPDATE users
-                SET full_name = ?, dob = ?, email = ?, phone = ?
-                WHERE id = ?
-                """;
+            UPDATE users
+            SET
+                full_name = ?,
+                dob = ?,
+                email = ?,
+                phone = ?
+            WHERE id = ?
+            """;
 
         String sqlPlayer = """
-                UPDATE players
-                SET nationality = ?, primary_position = ?, height_cm = ?, weight_kg = ?
-                WHERE user_id = ?
-                """;
+            UPDATE players
+            SET
+                nationality = ?,
+                primary_position = ?,
+                height_cm = ?,
+                weight_kg = ?
+            WHERE user_id = ?
+            """;
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
@@ -178,15 +228,17 @@ public class PlayerDAO extends UserDAO {
 
     public boolean deletePlayer(int playerId) throws SQLException {
         String sql = """
-                DELETE FROM users u
-                WHERE u.id = ?
+            DELETE FROM users u
+            WHERE u.id = ?
                 AND EXISTS (
-                    SELECT 1 FROM players p WHERE p.user_id = u.id
+                    SELECT
+                        1
+                    FROM players p
+                    WHERE p.user_id = u.id
                 )
-                """;
+            """;
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, playerId);
             return ps.executeUpdate() == 1;

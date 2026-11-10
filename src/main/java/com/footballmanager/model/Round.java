@@ -3,11 +3,10 @@ package com.footballmanager.model;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.regex.Pattern;
 
 public class Round {
-    private static final Pattern CANONICAL_NAME = Pattern.compile("Vòng [1-9][0-9]{0,8}");
     private int id;
+    private Integer number;
     private String name;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -31,12 +30,11 @@ public class Round {
     }
 
     public Integer getRoundNumber() {
-        return numberFromName(name);
+        return number;
     }
 
-    public static Integer numberFromName(String name) {
-        return name != null && CANONICAL_NAME.matcher(name).matches()
-                ? Integer.valueOf(name.substring(5)) : null;
+    public void setNumber(int number) {
+        this.number = number;
     }
 
     public String getDisplayCode() {

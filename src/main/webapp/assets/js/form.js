@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     const dialog = document.getElementById("result-dialog");
-    if (!dialog) return;
+    if (!dialog) {
+        return;
+    }
 
     dialog.showModal();
 

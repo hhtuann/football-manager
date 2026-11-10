@@ -1,14 +1,17 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
-<%@ page import ="com.footballmanager.model.*" %>
-<%@ page import ="com.footballmanager.dao.*" %>
-<%@ page import ="com.footballmanager.util.*" %>
-<%@ page import ="jakarta.servlet.http.HttpSession" %>
-<%@ page import ="java.util.*,java.sql.SQLException" %>
+<%@ page import="com.footballmanager.model.*" %>
+<%@ page import="com.footballmanager.dao.*" %>
+<%@ page import="com.footballmanager.util.*" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.sql.SQLException" %>
 
 <%
     response.setHeader("Cache-Control", "no-store");
     HttpSession currentSession = request.getSession(false);
-    if (currentSession == null || !(currentSession.getAttribute("currentUser") instanceof Staff)) {
+    Object currentUser = currentSession == null ? null : currentSession.getAttribute("currentUser");
+
+    if (!(currentUser instanceof Staff)) {
         response.sendError(403);
         return;
     }
@@ -18,15 +21,26 @@
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         try {
             ctx.requireVersion(request);
-            if (ctx.tournament == null || LineupSession.id(request, "tournamentId") != ctx.tournament.getId())
+            if (ctx.tournament == null || LineupSession.id(request, "tournamentId") != ctx.tournament.getId()) {
                 throw new IllegalArgumentException("Giải đấu không hợp lệ.");
-            if (request.getParameter("roundId") != null) ctx.requireRound(request);
-            if (request.getParameter("matchId") != null) ctx.requireMatch(request);
+            }
+            if (request.getParameter("roundId") != null) {
+                ctx.requireRound(request);
+            }
+            if (request.getParameter("matchId") != null) {
+                ctx.requireMatch(request);
+            }
             ctx.requireOptionalSide(request);
             int selectedId = LineupSession.id(request, "seasonId");
             Season selected = null;
-            for (Season item : ctx.seasons) if (item.getId() == selectedId) selected = item;
-            if (selected == null) throw new IllegalArgumentException("Mùa giải không thuộc kết quả tìm kiếm hiện tại.");
+            for (Season item : ctx.seasons) {
+                if (item.getId() == selectedId) {
+                    selected = item;
+                }
+            }
+            if (selected == null) {
+                throw new IllegalArgumentException("Mùa giải không thuộc kết quả tìm kiếm hiện tại.");
+            }
             if (ctx.season != selected || !ctx.version().equals(LineupSession.single(request, "ready"))) {
                 ctx.clearRound();
                 ctx.season = selected;
@@ -44,9 +58,9 @@
         }
         String title = "Tìm vòng đấu";
         request.setAttribute("breadcrumb", title);
-        if (error == null) request.setAttribute("breadcrumbParents", new String[][]{
-                {"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}
-        });
+        if (error == null) {
+            request.setAttribute("breadcrumbParents", new String[][]{{"Tìm mùa giải", request.getContextPath() + "/index.jsp?page=season-search&" + ctx.query()}});
+        }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= HTMLUtil.escape(title) %> - Football Manager</title>
@@ -60,16 +74,20 @@
     <% if (error != null) { %>
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
-    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search">« Quay lại</a>
+    <a class="back-link"
+       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=<%= ctx.mode %>">« Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <% } else { %>
-    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search">« Quay lại</a>
+    <a class="back-link"
+       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;<%= HTMLUtil.escape(ctx.query()) %>">«
+        Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <div class="search-toolbar">
         <form action="${pageContext.request.contextPath}/index.jsp" method="get">
             <input type="hidden" name="page" value="round-search">
+            <input type="hidden" name="mode" value="<%= ctx.mode %>">
             <input type="hidden" name="flow" value="<%= ctx.version() %>">
             <input type="hidden" name="tournamentId" value="<%= ctx.tournament.getId() %>"><input type="hidden"
                                                                                                   name="seasonId"

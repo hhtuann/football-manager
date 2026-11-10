@@ -35,6 +35,8 @@
         case "match-search" -> "/WEB-INF/views/gdMatchSearch.jsp";
         case "match-info" -> "/WEB-INF/views/gdMatchInfo.jsp";
         case "lineup-registration" -> "/WEB-INF/views/gdLineupRegistration.jsp";
+        case "match-event" -> "/WEB-INF/views/gdMatchEvent.jsp";
+        case "event-form" -> "/WEB-INF/views/gdEventForm.jsp";
         default -> null;
     };
 
@@ -48,8 +50,8 @@
         case "player-search" -> currentUser instanceof Staff;
         case "player-add" -> currentUser instanceof Staff;
         case "player-edit" -> currentUser instanceof Staff;
-        case "season-search", "round-search", "match-search", "match-info", "lineup-registration" ->
-                currentUser instanceof Staff;
+        case "season-search", "round-search", "match-search", "match-info", "lineup-registration", "match-event",
+             "event-form" -> currentUser instanceof Staff;
         default -> false;
     };
 

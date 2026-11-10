@@ -4,9 +4,9 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 
 > **Kiến trúc triển khai (pha cài đặt):** Java — mô hình **JSP + DAO**, không dùng Controller: JSP (View) gọi thẳng DAO/Entity, đúng phương pháp Full View ở mục 5 (View gọi entity không qua lớp trung gian điều khiển).
 
-> **Phạm vi hiện thực:** Java/JSP–DAO dùng PostgreSQL/JDBC; đăng nhập qua `UserDAO.checkLogin(User)` và session `currentUser: User`, không dùng session `staff`. CN1 và CN2 thuộc phạm vi hiện thực; UC3/CN3 ở mục 5.3 là thiết kế dự kiến, chưa có luồng cập nhật kết quả. Method đặt trên entity trong Full View là trách nhiệm phân tích; khi cài đặt, JSP gọi DAO tương ứng, không bổ sung Controller.
+> **Phạm vi hiện thực:** Java/JSP–DAO dùng PostgreSQL/JDBC; đăng nhập qua `UserDAO.checkLogin(User)` và session `currentUser: User`, không dùng session `staff`. CN1/CN2/CN3 đã có mã nguồn; UC3 cài đặt qua EventDAO thêm sự kiện và MatchDAO kết thúc trận. Method trên entity trong Full View là trách nhiệm phân tích; JSP gọi DAO, không bổ sung Controller.
 
-> **Phạm vi dữ liệu demo 08/11/2026:** 1 Tournament, 5 Season (mùa chính 2026/27 và bốn mùa cũ chỉ có thông tin mùa), 14 CLB, 26 vòng/182 trận ở mùa chính. Cặp đấu, tên CLB và hồ sơ cầu thủ dựa nguồn VPF; lịch được dịch theo ngày mốc seed, đội hình/diễn biến bổ sung phục vụ các ca nghiệp vụ, không khẳng định là kết quả lịch sử đã xác minh. Nguồn và khác biệt ghi trong file repo, không thêm metadata bền vững hay nhãn/cảnh báo mô phỏng trên UI. Việc chuẩn bị dữ liệu không triển khai CN3.
+> **Phạm vi dữ liệu demo 08/11/2026:** 1 Tournament, 5 Season, 14 CLB, 26 vòng/182 trận mùa chính. Cặp đấu/hồ sơ dựa VPF; lịch dịch theo ngày seed, đội hình/diễn biến phục vụ demo không phải biên bản lịch sử đã xác minh. Nguồn/khác biệt ghi ngoài database, không metadata mô phỏng. CN3 dùng cùng schema và đội hình CN2, không yêu cầu reset dữ liệu khi triển khai.
 
 
 > **Các quy tắc mô hình hóa đã chốt với giảng viên:**
@@ -46,12 +46,12 @@ Hệ thống quản lí giải bóng đá vô địch quốc gia — Module M1
 | `Tournament` | `+int id`, `+String name` | `+List<Season> seasons` | Giải đấu duy nhất: Giải Bóng đá Vô địch Quốc gia Việt Nam; tên giải lưu một lần, tách khỏi tên thương mại của mùa |
 | `Season` | `+int id`, `+int year`, `+String name`, `+LocalDate startDate`, `+LocalDate endDate`, `+String status` | `+Rule rule`, `+List<Round> rounds` | Theo yêu cầu cập nhật 05/11/2026, lưu tên chính thức riêng: LPBank V.League 1 – 2026/27; không suy tên từ Tournament + năm; không thêm tham chiếu ngược |
 | `Rule` | `+int id`, `+int requiredMainPlayers`, `+int maxBenchPlayers`, `+int maxSubstitutions`, `+int yellowCardsToSuspend`, `+int ageLimit`, `+int maxForeignPlayers` | — | Điều lệ giải — kiểm tra đội hình và treo giò trong UC2; quy tắc sự kiện UC3 là thiết kế |
-| `Round` | `+int id`, `+String name`, `+LocalDateTime startTime`, `+LocalDateTime endTime`, `+String status` | `+List<Match> matches` | Tên chuẩn `Vòng 1` ... `Vòng 26`; số vòng hiển thị suy ra từ tên, không có cột `round_number`. Thời gian có thể null khi chưa công bố |
+| `Round` | `+int id`, `+int number`, `+String name`, `+LocalDateTime startTime`, `+LocalDateTime endTime`, `+String status` | `+List<Match> matches` | Cập nhật 10/11/2026: `rounds.number` dương, duy nhất trong mùa, độc lập tên. Thời gian có thể null khi chưa công bố |
 | `Match` | `+int id`, `+LocalDateTime kickoffTime`, `+String status` | `+List<MatchClub> matchClubs`, `+List<Event> events` | Mã R07-T01 suy ra từ số vòng và thứ tự ID trận trong toàn vòng trước khi lọc tìm kiếm; không có cột `match_number`. Kickoff null khóa đăng ký; tỉ số derived từ sự kiện |
 | `Club` | `+int id`, `+String fullName`, `+String shortName`, `+int foundingYear`, `+String coachName` | `+Manager manager`, `+Stadium homeStadium`, `+List<ClubPlayer> clubPlayers` | `coachName` chỉ hiển thị — HLV không phải actor |
 | `Stadium` | `+int id`, `+String name`, `+int capacity`, `+String address` | — | |
 
-`Season.name` tiếp tục được lưu trong `seasons.name`. Số vòng/trận chỉ là giá trị hiển thị derived trong Java, không phải thuộc tính lưu mới hay tham chiếu ngược: `R07` và `Vòng 7` tìm cùng vòng; tên vòng không có số dùng fallback ổn định, không lỗi parse. Thứ tự trận dựa ID trong toàn vòng, không dựa kickoff, để mã không đổi khi lọc hoặc sửa lịch; session/URL/FK vẫn dùng ID. Không dùng `source_key`, `is_simulated` hoặc cờ `simulated` trong mô hình.
+`Season.name` tiếp tục lưu trong `seasons.name`. Theo yêu cầu cập nhật 10/11/2026, số vòng lưu riêng `Round.number`/`rounds.number`, không còn suy bằng regex tên. Mã `R07` vẫn giữ khi đổi tên vòng; thứ tự trận vẫn derived theo ID trong toàn vòng trước khi lọc và không theo kickoff. Session/URL/FK dùng ID; không tạo `match_number` hoặc metadata nguồn/cờ mô phỏng.
 
 ### 1.3. Lớp trung gian — chuỗi xương sống (3)
 
@@ -227,6 +227,7 @@ classDiagram
     }
     class Round {
         +int id
+        +int number
         +String name
         +LocalDateTime startTime
         +LocalDateTime endTime
@@ -451,6 +452,7 @@ classDiagram
     }
     class Round {
         +int id
+        +int number
         +String name
         +LocalDateTime startTime
         +LocalDateTime endTime
@@ -572,7 +574,7 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method v
 
 ### 5.3. UC3 — Cập nhật kết quả trận đấu
 
-**Diễn giải thiết kế dự kiến — chưa hiện thực CN3:** các trách nhiệm Event/saveMatch dưới đây không phải API runtime đã có.
+**Cài đặt CN3:** các trách nhiệm Event/saveMatch dưới đây được hiện thực qua `EventDAO.getEventList(int)`, `EventDAO.addEvent(Match, Event)` và `MatchDAO.saveMatch(Match)`; `refreshMatch(Match)` chỉ refresh status/tỷ số, không tải lại đội hình.
 
 **Giao diện "Đăng nhập" → `LoginView`** (giống chức năng 1)
 - Cần phương thức `checkLogin()` — Đầu vào: username, password · Đầu ra: boolean · Chủ thể: `User`
@@ -597,7 +599,7 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method v
 - Nút "Thêm sự kiện mới": `subAddEvent`
 - Nút "Kết thúc trận đấu": `subEndMatch`
 - Cần phương thức `getMatchInfo()` — Đầu vào: Match · Đầu ra: Match · Chủ thể: `Match`
-- Cần trách nhiệm `getEventList()` — Đầu vào phân tích: Match · Đầu ra: Event[] · Chủ thể: `Event`; chuyển sang thiết kế CN3 dự kiến thành `EventDAO.getEventList(matchId: int)`, lấy matchId từ Match đã chọn.
+- Trách nhiệm `getEventList()` — Đầu vào phân tích: Match · Đầu ra: Event[] · Chủ thể: `Event`; cài đặt `EventDAO.getEventList(matchId: int): List<Event>`, lấy ID từ Match trong ngữ cảnh đã chọn.
 - Cần phương thức `saveMatch()` (lưu trận khi kết thúc) — Đầu vào: Match · Đầu ra: boolean · Chủ thể: `Match`
 
 **Giao diện "Thêm sự kiện mới" → `EventFormView`**
@@ -610,7 +612,7 @@ Sơ đồ Mermaid: bản thực thể ở mục 4 + 6 View trên + các method v
 - Nhập ghi chú: `inNote`
 - Nút "Lưu thông tin sự kiện": `subSaveEvent`
 - Cần phương thức `validateEvent()` — Đầu vào: Event · Đầu ra: boolean · Chủ thể: `Event`
-- Cần trách nhiệm `addEvent()` — Đầu vào phân tích: Event · Đầu ra: boolean · Chủ thể: `Event`; chuyển sang thiết kế CN3 dự kiến thành `EventDAO.addEvent(match: Match, event: Event)` để giữ ngữ cảnh trận. Đây là hợp đồng thiết kế, chưa hiện thực CN3.
+- Trách nhiệm `addEvent()` — Đầu vào phân tích: Event · Đầu ra: boolean · Chủ thể: `Event`; cài đặt `EventDAO.addEvent(match: Match, event: Event)` để giữ ngữ cảnh trận. DAO kiểm tra timeline/đăng ký hiện tại và khóa FINISHED trong transaction.
 
 Sơ đồ Mermaid: bản thực thể ở mục 4 + 7 View trên + method vào đúng lớp (`Match`: getMatchInfo, saveMatch; `Event`: getEventList, validateEvent, addEvent; `Season/Round`: search...; `User`: checkLogin; `Staff`: getStaffInfo) + đường nối View–entity tương ứng.
 

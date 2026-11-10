@@ -2,14 +2,16 @@
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 
 <%
-    if (!"POST".equalsIgnoreCase(request.getMethod())) {
+    if (!"POST".equals(request.getMethod())) {
         response.setHeader("Allow", "POST");
         response.sendError(405);
         return;
     }
 
     HttpSession currentSession = request.getSession(false);
-    if (currentSession != null) currentSession.invalidate();
+    if (currentSession != null) {
+        currentSession.invalidate();
+    }
 
     response.setHeader("Cache-Control", "no-store");
     response.sendRedirect(request.getContextPath() + "/index.jsp");

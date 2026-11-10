@@ -20,24 +20,20 @@ public class DatabaseConnectionTest {
         }
 
         String sql = """
-                SELECT
-                    current_database() AS db_name,
-                    current_user AS db_user
-                """;
+            SELECT
+                current_database() AS db_name,
+                current_user AS db_user
+            """;
 
-        try (Connection conn = DriverManager.getConnection(
-                url, username, password);
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DriverManager.getConnection(url, username, password); PreparedStatement stmt =
+            conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("Kết nối PostgreSQL thành công!");
 
             if (rs.next()) {
-                System.out.println("Database: " +
-                        rs.getString("db_name"));
+                System.out.println("Database: " + rs.getString("db_name"));
 
-                System.out.println("User: " +
-                        rs.getString("db_user"));
+                System.out.println("User: " + rs.getString("db_user"));
             }
 
         } catch (SQLException e) {

@@ -6,7 +6,7 @@
 
 Ứng dụng quản lý giải bóng đá vô địch quốc gia, đồ án Phân tích và thiết kế hệ thống thông tin. Giữ kiến trúc Java/JSP hiện tại và giao diện tiếng Việt. Không tự chuyển sang Spring, React, ORM hoặc bổ sung hệ thống build frontend.
 
-CN2 — Staff đăng ký cầu thủ cho cả HOME/AWAY — đã triển khai. CN3 cập nhật kết quả chưa triển khai; chỉ làm khi người dùng yêu cầu.
+CN2 đăng ký HOME/AWAY và CN3 thêm sự kiện/kết thúc trận đã triển khai cho Staff. CN3 không bao gồm sửa/xóa sự kiện, mở lại trận hoặc action bắt đầu riêng.
 
 ### Nguồn yêu cầu và cách xử lý khác biệt
 
@@ -38,9 +38,10 @@ CN2 — Staff đăng ký cầu thủ cho cả HOME/AWAY — đã triển khai. C
 - `src/main/webapp/do*.jsp`: xử lý hành động POST, không phải REST API.
 - `src/main/webapp/WEB-INF/views/`: trang `gdLogin`, `gdHome`, `gdPlayerSearch`, `gdPlayerForm`.
 - CN2: `gdSeasonSearch`, `gdRoundSearch`, `gdMatchSearch`, `gdMatchInfo`, `gdLineupRegistration`; ghi qua `doSaveLineup.jsp`. Route và quyền Staff cùng đăng ký ở `index.jsp`.
+- CN3: dùng chung tìm mùa/vòng/trận với `mode=events`; `gdMatchEvent`, `gdEventForm`, POST `doAddEvent.jsp`/`doEndMatch.jsp`; `EventDAO` ghi subtype, `MatchDAO.saveMatch` kết thúc. Không có DAO trung gian mới.
 - `src/main/webapp/WEB-INF/views/fragments/topbar.jspf`: topbar/breadcrumb dùng chung.
 - `src/main/webapp/assets/`: CSS và JS; xem tokens và quy ước trong `DESIGN.md`.
-- `database/`: schema nền, migration mô hình, reset/seed/audit và JSON/CSV nguồn ngoài database.
+- `database/`: chỉ `schema.sql` và `dataset.sql`, gồm schema/nâng cấp bảo toàn dữ liệu và dataset kèm audit.
 - `README.md`: cài đặt, tài khoản demo và walkthrough chức năng cầu thủ.
 
 ## 3. Hiện trạng đã đối chiếu
@@ -52,19 +53,19 @@ CN2 — Staff đăng ký cầu thủ cho cả HOME/AWAY — đã triển khai. C
 - Trang quản lý cầu thủ dành cho `Staff`: tìm theo tên/mã, thêm, sửa, xóa.
 - Tìm kiếm JDBC dùng prepared statement và `ILIKE`.
 - Thêm/sửa cầu thủ dùng transaction. Thêm sinh username `CTxxx` qua `player_code_seq`; mật khẩu băm bằng PostgreSQL `crypt`/`pgcrypto`.
-- CN2 mở cho Staff: tìm mùa → vòng → trận, xem thông tin trận từ cache, lưu độc lập HOME/AWAY qua transaction và CSRF token thật. CN3 vẫn disabled.
+- CN2 và CN3 mở cho Staff, dùng currentUser và CSRF thật. CN2 lưu độc lập HOME/AWAY; CN3 thêm subtype/kết thúc, tỷ số derived và cache chỉ cập nhật sau commit.
 
 ### CSDL: phân biệt file SQL với môi trường thực tế
 
-- Một đường setup: `database/schema.sql` → `database/football_manager_migration.sql` → `database/demo_reset.sql`. Schema gốc chỉ chạy cho database mới; không chạy lại trên schema đã có. Không có migration ladder/import bộ cũ sau reset. `player_code_sequence.sql` là utility sequence chuẩn, không phải bộ seed khác.
-- `demo_reset.sql` tự gọi `demo_seed.sql` và `demo_verify.sql` bằng `\ir`; khi copy vào container phải giữ ba file cạnh nhau. Reset yêu cầu `-v ON_ERROR_STOP=1 -v confirm_reset=RESET_FOOTBALL_DEMO`; có thể thêm `-v demo_date=YYYY-MM-DD`. Thiếu/sai xác nhận dừng trước mutation; không mount reset vào startup.
-- Reset xóa toàn bộ dữ liệu 20 bảng ứng dụng kể cả tài khoản, cấp lại ID/sequence; danh sách bảng explicit, không TRUNCATE CASCADE hoặc tắt FK/trigger. Seed/audit chạy trong transaction trước commit. Seed riêng yêu cầu database rỗng, không tự reset hoặc nhân đôi dữ liệu.
-- Phải dừng web, backup custom, kiểm tra `pg_restore -l` và phục hồi thử vào database cô lập trước reset. Xem README cho lệnh backup/restore; không xóa volume. Sau reset/redeploy phải recreate web và đăng nhập lại để bỏ session cũ. Nếu rollback lỗi, lưu ý sequence không hoàn toàn transactional; không mở web với trạng thái chưa kiểm tra.
+- Setup chỉ hai file độc lập: `database/schema.sql` (đủ 20 bảng, trigger/view/sequence/pgcrypto và nâng cấp bảo toàn dữ liệu) → `database/dataset.sql` (seed+audit tự mở transaction, chỉ schema rỗng). Không có external include; script sinh dữ liệu, template audit rời và JSON/CSV nguồn đã xóa theo yêu cầu dọn repo.
+- `dataset.sql` từ chối nếu bất kỳ bảng ứng dụng có dữ liệu, không reset/TRUNCATE/xóa volume; ngày mốc tùy chọn `-v demo_date=YYYY-MM-DD`, mặc định theo Asia/Ho_Chi_Minh. Không mount import vào startup.
+- Database hiện có: dừng web, backup custom, xem danh mục và restore thử database cô lập, chỉ chạy `schema.sql`, không dataset. Migration `rounds.number` lấy số từ tên chuẩn một lần khi thiếu số; số không xác định/trùng khiến rollback để sửa mapping rõ ràng, không suy từ ID.
+- Sau nâng cấp/redeploy phải recreate web và đăng nhập lại để bỏ context cũ. Không coi file schema tồn tại là đã nâng cấp runtime. Backup chứa tài khoản không được commit.
 - Bộ mới: 1 Tournament, 5 Season (LPBank V.League 1 – 2026/27 và bốn mùa cũ chỉ có thông tin), 14 CLB, 316 cầu thủ nguồn đủ trường, 26 vòng/182 trận mùa chính. Mặc định ngày mốc theo `Asia/Ho_Chi_Minh`; vòng 1–6 FINISHED, vòng 7 sau mốc ít nhất bảy ngày, các vòng sau theo tuần. Ngày là lịch demo dịch, tên/năm mùa là nhãn nguồn.
-- Manager là tài khoản kỹ thuật; đội hình/sự kiện dựng phục vụ nghiệp vụ không phải biên bản VPF đã xác minh. `database/demo_manifest.json`, `database/demo_vpf_calendar_refresh.json` và JSON/CSV nguồn giữ nguồn/khác biệt/mapping/ca demo ngoài database, không thêm metadata bền vững. Sau reset sạch, R07-T01 (ID43) trống cả hai bên; R07-T02 (ID44) có HOME 11 chính + 3 dự bị để thử thay thế, AWAY trống; không hardcode các ID này vào ứng dụng.
-- Ghi chú refresh ở `database/demo_source_refresh.json`, bằng chứng hồ sơ ở `database/demo_vpf_profiles_refresh.json`: chỉ 4/387 request HTTP 200, còn lại timeout; 316 hồ sơ đủ trường được giữ từ nguồn có sẵn, không tuyên bố toàn bộ đã live-reverify. Manifest thiết kế 1.190 đăng ký/14 sự kiện; CT241 đã chấp hành án cộng dồn trước trận43, CT242/CT243 bị cấm trận43. Đây là contract fixture, không phải kết quả kiểm chứng runtime.
-- Giữ `seasons.name`; bỏ `users.source_key`, `rounds.round_number`, `matches.match_number`, `match_players.is_simulated`, `events.is_simulated`. Không tạo cột/bảng thay thế ngoài mô hình. Mọi thẻ đều tính án treo giò; không miễn thẻ theo nguồn hoặc cảnh báo mô phỏng trên UI. CN3 vẫn disabled.
-- Vòng lưu tên `Vòng 1`…`Vòng 26`; số vòng derived từ tên với fallback ổn định. `R07` và `Vòng 7` tìm cùng vòng. `R07-T01` derived theo ID trận trong toàn bộ vòng trước lọc tìm kiếm, không theo kickoff. URL/session/FK dùng ID; không suy số vòng từ ID cho mọi mùa. Không đổi transaction/baseline/cache để tiện đổi metadata.
+- Manager là tài khoản kỹ thuật; đội hình/sự kiện phục vụ demo không phải biên bản VPF đã xác minh. Repo không còn file nguồn/bằng chứng chi tiết hoặc công cụ tái sinh dataset. Sau import sạch, R07-T01 (ID43) trống cả hai bên; R07-T02 (ID44) có HOME 11 chính + 3 dự bị, AWAY trống; không hardcode các ID này vào ứng dụng.
+- Lần refresh trước chỉ có 4/387 request HTTP 200, còn lại timeout; không tuyên bố toàn bộ 316 hồ sơ đã live-reverify. Dataset thiết kế 1.190 đăng ký/14 sự kiện; CT241 đã chấp hành án cộng dồn trước trận43, CT242/CT243 bị cấm trận43. Đây là contract fixture, không phải kết quả kiểm chứng runtime.
+- Giữ `seasons.name`; `rounds.number` là cột nghiệp vụ mới theo yêu cầu10/11/2026, dương và duy nhất theo mùa. Không khôi phục `round_number`, `matches.match_number` hoặc metadata nguồn/cờ mô phỏng. Mọi thẻ đều tính treo giò.
+- `Round.number` độc lập tên; DAO tìm/sắp xếp theo số lưu, không regex tên. Mã `R07-T01` dùng số vòng và thứ tự ID trận trong toàn vòng trước lọc, không theo kickoff. URL/session/FK dùng ID; đổi tên không đổi mã. Giữ transaction/baseline/cache.
 - Ngày vòng/trận chưa xác định vẫn được NULL trong schema, hiển thị “Chưa xác định” và khóa CN2 khi kickoff NULL. Bộ demo bố trí ngày cụ thể cho ca cần lưu.
 - Username: Player `CTxxx`, Manager `QLxxx`, Staff `NVxxx`, ít nhất ba chữ số và không cắt số >999. Reset đồng bộ `player_code_seq`; định danh VPF chỉ dùng mapping tạm hoặc file nguồn, không dùng username làm khóa nguồn.
 - Không coi reset/migration/deploy đã chạy vì file tồn tại. Hướng dẫn setup khác kết quả thực chạy; snapshot bộ cũ không chứng minh bộ mới. Không đọc/in mật khẩu `.env` ra báo cáo.
@@ -89,6 +90,7 @@ CN2 — Staff đăng ký cầu thủ cho cả HOME/AWAY — đã triển khai. C
 - CN2/CN3 yêu cầu `currentUser instanceof Staff` ở cả trang và endpoint ghi; không thay bằng quyền Manager hoặc giới hạn Staff chỉ được thao tác CLB của mình. Kiểm tra ID trận/đội/cầu thủ thuộc đúng ngữ cảnh đã chọn; không tin ID gửi từ form.
 - Escape dữ liệu động bằng `HTMLUtil` trong HTML; không ghép dữ liệu người dùng vào JavaScript hoặc SQL.
 - Giữ UTF-8, URL theo `request.getContextPath()`; không hardcode `/` vì WAR cũng có thể deploy dưới context `/football-manager`.
+- SQL trong DAO khai báo biến `String` riêng trước khi gọi JDBC; text block cho câu nhiều dòng. Dùng chung quy ước keyword hoa, mỗi cột SELECT một dòng, từng JOIN/clause/predicate xuống dòng, không thay placeholder hoặc thứ tự bind để format.
 - Đăng nhập hiện hủy session cũ và tạo session mới; giữ hành vi này.
 - Ghi lỗi kỹ thuật qua `application.log`, hiển thị lỗi tiếng Việt có thể xử lý được; không lộ stack trace/SQL/credentials ra trang.
 - Sau ghi thành công dùng Post/Redirect/Get và flash message; không để refresh gửi lại thao tác.
@@ -126,7 +128,7 @@ Tài khoản sau reset theo README: `NV001`/`staff@123`, `QL001`/`manager@123`, 
 
 ## 6. Kiểm chứng và điều kiện hoàn thành
 
-- `src/test/java` có JUnit kiểm chứng CN2 trên PostgreSQL với ngữ cảnh dữ liệu cô lập; xem README để chạy. Các chương trình `main()` trong `src/main/java/com/footballmanager/test/` không phải JUnit; `LoginDAOTest` còn dùng tài khoản cũ.
+- `src/test/java` có JUnit CN2/CN3 trên PostgreSQL với schema UUID cô lập; cùng dùng biến CN2_TEST_* theo README. Các chương trình main() cũ không phải JUnit.
 - `package -DskipTests` chỉ chứng minh build. JSP cần được truy cập thực trên Tomcat để phát hiện lỗi compile/runtime.
 - Khi thêm nghiệp vụ, giữ regression test cho invariant quan trọng theo công cụ thực sự được bổ sung; không viết test kiểm tra chuỗi source hoặc mock trả lại đúng dữ liệu vừa truyền.
 - Smoke qua browser: đăng nhập từng vai trò liên quan, mở trang, thao tác thành công, reload kiểm tra dữ liệu đã lưu; thử ID trái quyền, dữ liệu sai và trạng thái bị khóa.
@@ -140,12 +142,12 @@ Tài khoản sau reset theo README: `NV001`/`staff@123`, `QL001`/`manager@123`, 
 2. Đối chiếu contract CN2/CN3 ở mục dưới; chỉ làm rõ phần chưa được báo cáo xác định, không hỏi lại actor Staff, chuỗi tìm kiếm, kế thừa sự kiện hoặc khóa thêm sự kiện sau kết thúc.
 3. Dùng schema hiện có làm nền; bổ sung migration bảo toàn dữ liệu và demo cần thiết, không tạo quan hệ Club–Season hoặc lớp phiếu đã bị loại khỏi mô hình.
 4. Tái sử dụng luồng mùa/vòng/trận và đội hình CN2 đã triển khai; không tạo lại luồng tìm kiếm phẳng cho CN3.
-5. Hoàn thiện Staff thêm sự kiện và kết thúc trận, đồng bộ tỷ số derived và đối tượng session sau commit.
-6. Chỉ mở nút CN3 sau khi luồng thêm sự kiện/kết thúc trận chạy được; giữ CN2 đang hoạt động, smoke và cập nhật tài liệu.
+5. Giữ EventDAO và MatchDAO cùng khóa match row khi thêm/kết thúc để tương thích CN2; không mutate cache trước commit.
+6. CN3 đã mở; mọi thay đổi tiếp theo phải giữ subtype, tỷ số derived, khóa FINISHED và smoke hồi quy CN2.
 
 ## 8. Contract CN2/CN3 theo báo cáo hệ thống
 
-CN2 bên dưới đã có triển khai; CN3 là thiết kế cho lần tiếp theo, không phải endpoint hiện có. Đối chiếu chi tiết ở mục 1–3 của từng báo cáo pha thiết kế và mục 1–3, 5 của báo cáo phân tích.
+CN2 và CN3 bên dưới đều đã có triển khai. Đối chiếu chi tiết báo cáo tương ứng; nguồn code và kiểm chứng runtime quyết định bằng chứng thực chạy, không chỉ nội dung thiết kế.
 
 ### Luồng chung và session
 

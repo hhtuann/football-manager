@@ -5,9 +5,10 @@
 
 <%!
     private String escapeTopbarHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;")
-                .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+        if (s == null) {
+            return "";
+        }
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 %>
 
@@ -16,9 +17,7 @@
     Object topbarAccount = topbarSession == null ? null : topbarSession.getAttribute("currentUser");
     User topbarUser = topbarAccount instanceof User ? (User) topbarAccount : null;
 
-    String topbarRole = topbarUser instanceof Staff ? "Nhân viên Ban tổ chức"
-            : topbarUser instanceof Player ? "Cầu thủ"
-            : topbarUser instanceof Manager ? "Quản lý CLB" : "Khán giả";
+    String topbarRole = topbarUser instanceof Staff ? "Nhân viên Ban tổ chức" : topbarUser instanceof Player ? "Cầu thủ" : topbarUser instanceof Manager ? "Quản lý CLB" : "Khán giả";
 
     String currentBreadcrumb = (String) request.getAttribute("breadcrumb");
     String[][] topbarBreadcrumbParents = (String[][]) request.getAttribute("breadcrumbParents");

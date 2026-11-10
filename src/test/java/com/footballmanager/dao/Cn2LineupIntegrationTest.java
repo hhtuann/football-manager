@@ -49,14 +49,27 @@ class Cn2LineupIntegrationTest {
 
     @AfterEach
     void cleanup() throws Exception {
-        if (db != null) db.close();
+        if (db != null) {
+            db.close();
+        }
     }
 
     @Test
     void searchesStatusWithoutLeakingAnotherRound() throws Exception {
         int finished = db.createMatch(db.kickoff.plusDays(1));
         db.execute("UPDATE matches SET status='FINISHED' WHERE id=?", finished);
-        int otherRound = db.insert("INSERT INTO rounds(name,start_time,end_time,status,season_id) SELECT 'Other round',start_time,end_time,status,season_id FROM rounds WHERE id=? RETURNING id", db.roundId);
+        int otherRound = db.insert("""
+            INSERT INTO rounds (number, name, start_time, end_time, status, season_id)
+            SELECT 8,
+                   'Other round',
+                   start_time,
+                   end_time,
+                   status,
+                   season_id
+            FROM rounds
+            WHERE id = ?
+            RETURNING id
+            """, db.roundId);
         int outside = db.createMatch(db.kickoff.plusDays(2));
         db.execute("UPDATE matches SET round_id=? WHERE id=?", otherRound, outside);
         Round round = new Round();
@@ -103,16 +116,29 @@ class Cn2LineupIntegrationTest {
         db.execute("UPDATE matches SET kickoff_time=? WHERE id=?", db.kickoff.minusDays(2), second);
         assertEquals("R07-T02", dao.searchMatch(round, "r07-t02").get(0).getDisplayCode());
         assertTrue(dao.searchMatch(round, "R08-T01").isEmpty());
-        assertEquals(List.of(db.matchId, second), dao.searchMatch(round, "SCHEDULED").stream().map(Match::getId).toList());
+        assertEquals(List.of(db.matchId, second),
+            dao.searchMatch(round, "SCHEDULED").stream().map(Match::getId).toList());
     }
 
     @Test
     void loadsAllRoundsInNumericOrderWithUnknownDatesAndNonchronologicalIds() throws Exception {
         db.execute("UPDATE rounds SET start_time=NULL,end_time=NULL WHERE id=?", db.roundId);
         for (int number = 26; number >= 1; number--) {
-            if (number == 7) continue;
-            db.insert("INSERT INTO rounds(name,start_time,end_time,status,season_id) SELECT ?,NULL,NULL,'SCHEDULED',season_id FROM rounds WHERE id=? RETURNING id",
-                    "Vòng " + number, db.roundId);
+            if (number == 7) {
+                continue;
+            }
+            db.insert("""
+                INSERT INTO rounds (number, name, start_time, end_time, status, season_id)
+                SELECT ?,
+                       ?,
+                       NULL,
+                       NULL,
+                       'SCHEDULED',
+                       season_id
+                FROM rounds
+                WHERE id = ?
+                RETURNING id
+                """, number, "Vòng " + number, db.roundId);
         }
         Season season = new Season();
         season.setId(db.integer("SELECT season_id FROM rounds WHERE id=?", db.roundId));
@@ -134,14 +160,33 @@ class Cn2LineupIntegrationTest {
         }
         assertEquals("Chưa xác định", LineupSession.date(null));
         assertEquals(List.of(db.roundId), rounds.searchRound(season, "r07").stream().map(Round::getId).toList());
-        assertEquals(List.of(Integer.valueOf(26)), rounds.searchRound(season, "Vòng 26").stream().map(Round::getRoundNumber).toList());
+        assertEquals(List.of(Integer.valueOf(26)),
+            rounds.searchRound(season, "Vòng 26").stream().map(Round::getRoundNumber).toList());
     }
 
     @Test
-    void noncanonicalRoundNamesHaveStableFallbackWithoutInventingRoundNumbers() throws Exception {
+    void renamedRoundsRetainNumbersCodesAndNumericOrder() throws Exception {
         db.execute("UPDATE rounds SET name='Final' WHERE id=?", db.roundId);
-        int overflow = db.insert("INSERT INTO rounds(name,status,season_id) SELECT 'Vòng 999999999999999999999999','SCHEDULED',season_id FROM rounds WHERE id=? RETURNING id", db.roundId);
-        int numbered = db.insert("INSERT INTO rounds(name,status,season_id) SELECT 'Vòng 2','SCHEDULED',season_id FROM rounds WHERE id=? RETURNING id", db.roundId);
+        int tenth = db.insert("""
+            INSERT INTO rounds (number, name, status, season_id)
+            SELECT 10,
+                   'Vòng 1',
+                   'SCHEDULED',
+                   season_id
+            FROM rounds
+            WHERE id = ?
+            RETURNING id
+            """, db.roundId);
+        int second = db.insert("""
+            INSERT INTO rounds (number, name, status, season_id)
+            SELECT 2,
+                   'Vòng 999999999999999999999999',
+                   'SCHEDULED',
+                   season_id
+            FROM rounds
+            WHERE id = ?
+            RETURNING id
+            """, db.roundId);
         Season season = new Season();
         season.setId(db.integer("SELECT season_id FROM rounds WHERE id=?", db.roundId));
         RoundDAO rounds = new RoundDAO() {
@@ -151,24 +196,70 @@ class Cn2LineupIntegrationTest {
             }
         };
         List<Round> found = rounds.searchRound(season, "");
-        assertEquals(List.of(numbered, db.roundId, overflow), found.stream().map(Round::getId).toList());
-        assertEquals("R02", found.get(0).getDisplayCode());
-        assertNull(found.get(1).getRoundNumber());
-        assertNull(found.get(2).getRoundNumber());
+        assertEquals(List.of(second, db.roundId, tenth), found.stream().map(Round::getId).toList());
+        assertEquals(List.of(2, 7, 10), found.stream().map(Round::getRoundNumber).toList());
+        assertEquals(List.of("R02", "R07", "R10"), found.stream().map(Round::getDisplayCode).toList());
         assertEquals("Final", found.get(1).getDisplayName());
-        assertEquals("Chưa xác định", found.get(1).getDisplayCode());
         assertEquals(List.of(db.roundId), rounds.searchRound(season, "Final").stream().map(Round::getId).toList());
+        assertEquals(List.of(db.roundId), rounds.searchRound(season, "r07").stream().map(Round::getId).toList());
         assertTrue(rounds.searchRound(season, "R01").isEmpty());
-        assertEquals("Chưa xác định", load().getDisplayCode());
-        db.execute("UPDATE rounds SET name='Vòng 999999999999999999999999' WHERE id=?", db.roundId);
-        assertEquals("Chưa xác định", load().getDisplayCode());
-        for (String name : new String[]{null, "", "Vòng 0", "Vòng -1", "Vòng 07", "VL2627_Vòng 7"}) {
-            Round round = new Round();
-            round.setName(name);
-            assertNull(round.getRoundNumber());
-            assertEquals("Chưa xác định", round.getDisplayCode());
-            assertEquals(name, round.getDisplayName());
-        }
+        Round round = new Round();
+        round.setId(db.roundId);
+        assertEquals("R07-T01", dao.searchMatch(round, "r07-t01").get(0).getDisplayCode());
+        db.execute("UPDATE rounds SET name='Vòng 99' WHERE id=?", db.roundId);
+        assertEquals("R07-T01", dao.searchMatch(round, "r07-t01").get(0).getDisplayCode());
+        assertTrue(dao.searchMatch(round, "R99-T01").isEmpty());
+        Round model = found.get(1);
+        model.setName("Renamed again");
+        assertEquals(Integer.valueOf(7), model.getRoundNumber());
+        assertEquals("R07", model.getDisplayCode());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1})
+    void rejectsNonpositiveRoundNumbers(int number) {
+        SQLException failure = assertThrows(SQLException.class,
+            () -> db.execute("UPDATE rounds SET number=? WHERE id=?", number, db.roundId));
+        assertEquals("23514", failure.getSQLState());
+    }
+
+    @Test
+    void requiresRoundNumbersAndRejectsDuplicatesWithinASeason() throws Exception {
+        SQLException missing = assertThrows(SQLException.class,
+            () -> db.execute("UPDATE rounds SET number=NULL WHERE id=?", db.roundId));
+        assertEquals("23502", missing.getSQLState());
+        String duplicateSql = """
+            INSERT INTO rounds (number, name, status, season_id)
+            SELECT number,
+                   'Another display name',
+                   status,
+                   season_id
+            FROM rounds
+            WHERE id = ?
+            RETURNING id
+            """;
+        SQLException duplicate = assertThrows(SQLException.class, () -> db.insert(duplicateSql, db.roundId));
+        assertEquals("23505", duplicate.getSQLState());
+        int otherSeason = db.insert("""
+            INSERT INTO seasons (year, name, start_date, end_date, status, tournament_id, rule_id)
+            SELECT s.year,
+                   'Another season',
+                   s.start_date,
+                   s.end_date,
+                   s.status,
+                   s.tournament_id,
+                   s.rule_id
+            FROM seasons s
+            JOIN rounds r ON r.season_id = s.id
+            WHERE r.id = ?
+            RETURNING id
+            """, db.roundId);
+        int otherRound = db.insert("""
+            INSERT INTO rounds (number, name, status, season_id)
+            VALUES (7, 'Another season round', 'SCHEDULED', ?)
+            RETURNING id
+            """, otherSeason);
+        assertEquals(7, db.integer("SELECT number FROM rounds WHERE id=?", otherRound));
     }
 
     @Test
@@ -207,7 +298,8 @@ class Cn2LineupIntegrationTest {
     }
 
     @ParameterizedTest(name = "Rejects {0}")
-    @ValueSource(strings = {"ten starters", "no goalkeeper", "bench goalkeeper only", "too much bench", "foreign bench", "over age", "wrong membership", "duplicate", "invalid role"})
+    @ValueSource(strings = {"ten starters", "no goalkeeper", "bench goalkeeper only", "too much bench", "foreign " +
+        "bench", "over age", "wrong membership", "duplicate", "invalid role"})
     void rejectsInvalidLineupsWithoutChangingDatabaseOrCandidate(String invalid) throws Exception {
         seedHome();
         if (invalid.equals("no goalkeeper")) {
@@ -223,12 +315,17 @@ class Cn2LineupIntegrationTest {
             db.execute("UPDATE users SET dob=? WHERE id=?", db.seasonStart.minusYears(31), db.players[0][12]);
         }
         Match baseline = load();
-        MatchClub desired = candidate(baseline, "HOME", invalid.equals("ten starters") ? 10 : 11,
-                invalid.equals("too much bench") ? 4 : 2);
-        if (invalid.equals("wrong membership"))
+        MatchClub desired = candidate(baseline, "HOME", invalid.equals("ten starters") ? 10 : 11, invalid.equals("too"
+            + " much bench") ? 4 : 2);
+        if (invalid.equals("wrong membership")) {
             desired.getMatchPlayers().get(12).getClubPlayer().setId(db.members[1][12]);
-        if (invalid.equals("duplicate")) desired.getMatchPlayers().get(12).getClubPlayer().setId(db.members[0][1]);
-        if (invalid.equals("invalid role")) desired.getMatchPlayers().get(12).setRole("CAPTAIN");
+        }
+        if (invalid.equals("duplicate")) {
+            desired.getMatchPlayers().get(12).getClubPlayer().setId(db.members[0][1]);
+        }
+        if (invalid.equals("invalid role")) {
+            desired.getMatchPlayers().get(12).setRole("CAPTAIN");
+        }
         List<Row> before = rows(db.homeSide);
         List<CandidateRow> untouched = snapshot(desired);
         List<MatchPlayer> cachedBaseline = side(baseline, "HOME").getMatchPlayers();
@@ -280,16 +377,19 @@ class Cn2LineupIntegrationTest {
         }
     }
 
-    private boolean competingSave(Match baseline, MatchClub desired, CountDownLatch ready,
-                                  CountDownLatch start) throws Exception {
+    private boolean competingSave(Match baseline, MatchClub desired, CountDownLatch ready, CountDownLatch start) throws Exception {
         ready.countDown();
-        if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Fixture barrier timed out");
+        if (!start.await(10, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Fixture barrier timed out");
+        }
         try {
             return dao.saveLineup(baseline, desired);
         } catch (IllegalArgumentException stale) {
             return false;
         } catch (SQLException conflict) {
-            if (!"40001".equals(conflict.getSQLState())) throw conflict;
+            if (!"40001".equals(conflict.getSQLState())) {
+                throw conflict;
+            }
             return false;
         }
     }
@@ -311,10 +411,11 @@ class Cn2LineupIntegrationTest {
         switch (reason) {
             case "ONGOING", "FINISHED" -> db.execute("UPDATE matches SET status=? WHERE id=?", reason, db.matchId);
             case "kickoff" ->
-                    db.execute("UPDATE matches SET kickoff_time=LOCALTIMESTAMP - INTERVAL '1 second' WHERE id=?", db.matchId);
+                db.execute("UPDATE matches SET kickoff_time=LOCALTIMESTAMP - INTERVAL '1 second' WHERE id=?",
+                    db.matchId);
             case "unknown kickoff" -> db.execute("UPDATE matches SET kickoff_time=NULL WHERE id=?", db.matchId);
-            case "event" ->
-                    db.insert("INSERT INTO events(minute,match_id,match_player_id) VALUES (1,?,?) RETURNING id", db.matchId, rows(db.homeSide).get(0).id);
+            case "event" -> db.insert("INSERT INTO events(minute,match_id,match_player_id) VALUES (1,?,?) RETURNING id",
+                db.matchId, rows(db.homeSide).get(0).id);
             default -> fail("Unexpected fixture");
         }
         List<Row> before = rows(db.homeSide);
@@ -329,8 +430,10 @@ class Cn2LineupIntegrationTest {
         seedHome();
         // Force a real SQL failure after the DAO has begun applying a legitimate diff.
         db.execute("CREATE SEQUENCE fixture_failure_reached");
-        db.execute("CREATE FUNCTION reject_fixture_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('fixture_failure_reached'); RAISE EXCEPTION 'fixture insert rejection'; END; $$");
-        db.execute("CREATE TRIGGER reject_fixture_insert BEFORE INSERT ON match_players FOR EACH ROW EXECUTE FUNCTION reject_fixture_insert()");
+        db.execute("CREATE FUNCTION reject_fixture_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM " +
+            "nextval('fixture_failure_reached'); RAISE EXCEPTION 'fixture insert rejection'; END; $$");
+        db.execute("CREATE TRIGGER reject_fixture_insert BEFORE INSERT ON match_players FOR EACH ROW EXECUTE " +
+            "FUNCTION" + " reject_fixture_insert()");
         Match baseline = load();
         MatchClub desired = candidate(baseline, "HOME", 11, 1);
         desired.getMatchPlayers().get(10).setRole("SUBSTITUTE");
@@ -353,7 +456,8 @@ class Cn2LineupIntegrationTest {
     @Test
     void acceptsExactAgeForeignAndBenchLimitsUsingApprovedVocabulary() throws Exception {
         db.execute("UPDATE users SET dob=? WHERE id=?", db.seasonStart.minusYears(30), db.players[0][13]);
-        db.execute("UPDATE players SET nationality='Brazil' WHERE user_id IN (?,?)", db.players[0][12], db.players[0][13]);
+        db.execute("UPDATE players SET nationality='Brazil' WHERE user_id IN (?,?)", db.players[0][12],
+            db.players[0][13]);
         Match baseline = load();
         assertTrue(dao.saveLineup(baseline, candidate(baseline, "HOME", 11, 3)));
         assertEquals(14, rows(db.homeSide).size());
@@ -370,12 +474,15 @@ class Cn2LineupIntegrationTest {
     @ValueSource(strings = {"red", "yellow"})
     void suspensionIsTriggeredAndServedByNextFinishedClubMatch(String card) throws Exception {
         int history = db.createMatch(LocalDateTime.now().minusDays(10));
-        int actor = db.insert("INSERT INTO match_players(role,match_club_id,club_player_id) VALUES ('STARTING',?,?) RETURNING id",
-                db.side(history, "HOME"), db.members[0][1]);
+        int actor =
+            db.insert("INSERT INTO match_players(role,match_club_id,club_player_id) VALUES ('STARTING',?,?) " +
+                "RETURNING id", db.side(history, "HOME"), db.members[0][1]);
         int count = card.equals("yellow") ? 2 : 1;
         for (int i = 0; i < count; i++) {
-            int event = db.insert("INSERT INTO events(minute,match_id,match_player_id) VALUES (?,?,?) RETURNING id", 10 + i, history, actor);
-            db.execute("INSERT INTO " + (card.equals("yellow") ? "yellow_cards" : "red_cards") + "(id) VALUES (?)", event);
+            int event = db.insert("INSERT INTO events(minute,match_id,match_player_id) VALUES (?,?,?) RETURNING id",
+                10 + i, history, actor);
+            db.execute("INSERT INTO " + (card.equals("yellow") ? "yellow_cards" : "red_cards") + "(id) VALUES (?)",
+                event);
         }
         db.execute("UPDATE matches SET status='FINISHED' WHERE id=?", history);
         Match blocked = load();
@@ -393,14 +500,15 @@ class Cn2LineupIntegrationTest {
         assertTrue(dao.saveLineup(eligible, candidate(eligible, "HOME", 11, 0)));
     }
 
-
     @Test
     void redAndYellowPenaltiesAccumulateAndRequireTwoFinishedClubMatches() throws Exception {
         int history = db.createMatch(LocalDateTime.now().minusDays(12));
-        int actor = db.insert("INSERT INTO match_players(role,match_club_id,club_player_id) VALUES ('STARTING',?,?) RETURNING id",
-                db.side(history, "HOME"), db.members[0][1]);
+        int actor =
+            db.insert("INSERT INTO match_players(role,match_club_id,club_player_id) VALUES ('STARTING',?,?) " +
+                "RETURNING id", db.side(history, "HOME"), db.members[0][1]);
         for (String type : new String[]{"yellow_cards", "yellow_cards", "red_cards"}) {
-            int event = db.insert("INSERT INTO events(minute,match_id,match_player_id) VALUES (10,?,?) RETURNING id", history, actor);
+            int event = db.insert("INSERT INTO events(minute,match_id,match_player_id) VALUES (10,?,?) RETURNING id",
+                history, actor);
             db.execute("INSERT INTO " + type + "(id) VALUES (?)", event);
         }
         db.execute("UPDATE matches SET status='FINISHED' WHERE id=?", history);
@@ -415,8 +523,8 @@ class Cn2LineupIntegrationTest {
     }
 
     private void assertRejected(Match baseline, MatchClub desired) {
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> dao.saveLineup(baseline, desired));
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> dao.saveLineup(baseline,
+            desired));
         assertNotNull(error.getMessage());
         assertFalse(error.getMessage().isBlank());
     }
@@ -450,8 +558,8 @@ class Cn2LineupIntegrationTest {
             MatchPlayer entry = new MatchPlayer();
             entry.setClubPlayer(member);
             entry.setRole(i < starters ? "STARTING" : "SUBSTITUTE");
-            MatchPlayer retained = original.getMatchPlayers().stream()
-                    .filter(p -> p.getClubPlayer().getId() == member.getId()).findFirst().orElse(null);
+            MatchPlayer retained =
+                original.getMatchPlayers().stream().filter(p -> p.getClubPlayer().getId() == member.getId()).findFirst().orElse(null);
             if (retained != null) {
                 entry.setId(retained.getId());
                 entry.setRegisteredAt(retained.getRegisteredAt());
@@ -464,20 +572,23 @@ class Cn2LineupIntegrationTest {
 
     private List<Row> rows(int side) throws SQLException {
         List<Row> result = new ArrayList<>();
-        try (Connection c = db.connect(); PreparedStatement s = c.prepareStatement(
-                "SELECT id,club_player_id,role,registered_at FROM match_players WHERE match_club_id=? ORDER BY club_player_id")) {
+        try (Connection c = db.connect(); PreparedStatement s =
+            c.prepareStatement("SELECT id,club_player_id,role," + "registered_at FROM match_players WHERE " +
+                "match_club_id=? ORDER BY club_player_id")) {
             s.setInt(1, side);
             try (ResultSet rs = s.executeQuery()) {
-                while (rs.next())
-                    result.add(new Row(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getObject(4, LocalDateTime.class)));
+                while (rs.next()) {
+                    result.add(new Row(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getObject(4,
+                        LocalDateTime.class)));
+                }
             }
         }
         return result;
     }
 
     private static List<CandidateRow> snapshot(MatchClub candidate) {
-        return candidate.getMatchPlayers().stream().map(p -> new CandidateRow(p.getId(),
-                p.getClubPlayer().getId(), p.getRole(), p.getRegisteredAt())).toList();
+        return candidate.getMatchPlayers().stream().map(p -> new CandidateRow(p.getId(), p.getClubPlayer().getId(),
+            p.getRole(), p.getRegisteredAt())).toList();
     }
 
     private record Row(int id, int member, String role, LocalDateTime time) {

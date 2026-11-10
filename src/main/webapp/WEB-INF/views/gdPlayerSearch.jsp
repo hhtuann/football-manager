@@ -21,7 +21,9 @@
     currentSession.removeAttribute("deleteResult");
 
     String key = request.getParameter("key");
-    if (key == null) key = "";
+    if (key == null) {
+        key = "";
+    }
 
     ArrayList<Player> listPlayer = new ArrayList<>();
     String error = null;
@@ -156,7 +158,7 @@
         case "success" -> "Thông tin cầu thủ và tài khoản đăng nhập đã được xóa.";
         case "not-found" -> "Không tìm thấy cầu thủ cần xóa!";
         case "referenced" ->
-                "Không thể xóa cầu thủ đã thuộc CLB hoặc có lịch sử thi đấu. Dữ liệu liên quan được giữ nguyên.";
+            "Không thể xóa cầu thủ đã thuộc CLB hoặc có lịch sử thi đấu. Dữ liệu liên quan được giữ nguyên.";
         default -> "Không thể xóa cầu thủ. Vui lòng thử lại!";
     } %>
     </p>

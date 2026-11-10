@@ -62,7 +62,6 @@ public class Match {
         this.lineupLocked = lineupLocked;
     }
 
-
     public Integer getRoundNumber() {
         return roundNumber;
     }
@@ -80,6 +79,7 @@ public class Match {
     }
 
     public String getDisplayCode() {
-        return roundNumber == null || matchNumber == null ? "Chưa xác định" : String.format("R%02d-T%02d", roundNumber, matchNumber);
+        return roundNumber == null || matchNumber == null ? "Chưa xác định" : String.format("R%02d-T%02d",
+            roundNumber, matchNumber);
     }
 }

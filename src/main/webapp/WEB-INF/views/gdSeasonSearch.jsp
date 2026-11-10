@@ -1,10 +1,16 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" session="false" %>
-<%@ page
-        import="com.footballmanager.model.*,com.footballmanager.dao.*,com.footballmanager.util.*,jakarta.servlet.http.HttpSession,java.util.*,java.sql.SQLException" %>
+<%@ page import="com.footballmanager.model.*" %>
+<%@ page import="com.footballmanager.dao.*" %>
+<%@ page import="com.footballmanager.util.*" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.sql.SQLException" %>
 <%
     response.setHeader("Cache-Control", "no-store");
     HttpSession currentSession = request.getSession(false);
-    if (currentSession == null || !(currentSession.getAttribute("currentUser") instanceof Staff)) {
+    Object currentUser = currentSession == null ? null : currentSession.getAttribute("currentUser");
+
+    if (!(currentUser instanceof Staff)) {
         response.sendError(403);
         return;
     }
@@ -13,13 +19,21 @@
         String error = null;
         String key = request.getParameter("key") == null ? "" : request.getParameter("key");
         try {
+            ctx.selectMode(request);
             if (request.getParameter("flow") != null) {
                 ctx.requireVersion(request);
-                if (ctx.tournament == null || LineupSession.id(request, "tournamentId") != ctx.tournament.getId())
+                if (ctx.tournament == null || LineupSession.id(request, "tournamentId") != ctx.tournament.getId()) {
                     throw new IllegalArgumentException("Giải đấu không thuộc ngữ cảnh hiện tại.");
-                if (request.getParameter("seasonId") != null) ctx.requireSeason(request);
-                if (request.getParameter("roundId") != null) ctx.requireRound(request);
-                if (request.getParameter("matchId") != null) ctx.requireMatch(request);
+                }
+                if (request.getParameter("seasonId") != null) {
+                    ctx.requireSeason(request);
+                }
+                if (request.getParameter("roundId") != null) {
+                    ctx.requireRound(request);
+                }
+                if (request.getParameter("matchId") != null) {
+                    ctx.requireMatch(request);
+                }
                 ctx.requireOptionalSide(request);
             } else if (request.getParameter("tournamentId") != null || request.getParameter("seasonId") != null || request.getParameter("roundId") != null || request.getParameter("matchId") != null || request.getParameter("matchClubId") != null) {
                 throw new IllegalArgumentException("Thiếu phiên điều hướng. Vui lòng chọn lại mùa giải.");
@@ -41,7 +55,9 @@
         }
         String title = "Tìm mùa giải";
         request.setAttribute("breadcrumb", title);
-        if (error == null) request.setAttribute("breadcrumbParents", new String[][]{});
+        if (error == null) {
+            request.setAttribute("breadcrumbParents", new String[][]{});
+        }
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= HTMLUtil.escape(title) %> - Football Manager</title>
@@ -55,7 +71,8 @@
     <% if (error != null) { %>
     <div class="error-box" role="alert"><%= HTMLUtil.escape(error) %>
     </div>
-    <a class="back-link" href="${pageContext.request.contextPath}/index.jsp?page=season-search">« Quay lại</a>
+    <a class="back-link"
+       href="${pageContext.request.contextPath}/index.jsp?page=season-search&amp;mode=<%= ctx.mode %>">« Quay lại</a>
     <h2><%= HTMLUtil.escape(title) %>
     </h2>
     <% } else { %>
@@ -67,6 +84,7 @@
     <div class="search-toolbar">
         <form action="${pageContext.request.contextPath}/index.jsp" method="get">
             <input type="hidden" name="page" value="season-search">
+            <input type="hidden" name="mode" value="<%= ctx.mode %>">
             <input type="hidden" name="flow" value="<%= ctx.version() %>">
             <input type="hidden" name="tournamentId" value="<%= ctx.tournament.getId() %>">
             <label class="sr-only" for="key">Tìm kiếm mùa giải</label><input type="text" id="key" name="key"

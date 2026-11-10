@@ -1,0 +1,7 @@
+<input type="hidden" name="mode" value="events">
+<input type="hidden" name="flow" value="<%= ctx.version() %>">
+<input type="hidden" name="csrf" value="<%= ctx.csrf() %>">
+<input type="hidden" name="tournamentId" value="<%= ctx.tournament.getId() %>">
+<input type="hidden" name="seasonId" value="<%= ctx.season.getId() %>">
+<input type="hidden" name="roundId" value="<%= ctx.round.getId() %>">
+<input type="hidden" name="matchId" value="<%= ctx.match.getId() %>">

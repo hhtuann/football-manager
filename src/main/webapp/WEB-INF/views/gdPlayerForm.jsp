@@ -21,7 +21,9 @@
 
         try {
             playerId = Integer.parseInt(request.getParameter("id"));
-            if (playerId <= 0) throw new NumberFormatException();
+            if (playerId <= 0) {
+                throw new NumberFormatException();
+            }
         } catch (NumberFormatException e) {
             response.sendError(400, "ID cầu thủ không hợp lệ!");
             return;
@@ -67,9 +69,7 @@
 
     currentSession.removeAttribute("error");
 
-    request.setAttribute("breadcrumbParents", new String[][]{
-            {"Tìm cầu thủ", request.getContextPath() + "/index.jsp?page=player-search"}
-    });
+    request.setAttribute("breadcrumbParents", new String[][]{{"Tìm cầu thủ", request.getContextPath() + "/index.jsp?page=player-search"}});
     request.setAttribute("breadcrumb", isEditMode ? "Sửa cầu thủ" : "Thêm cầu thủ");
 %>
 
